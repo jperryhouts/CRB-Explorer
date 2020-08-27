@@ -1,0 +1,428 @@
+"use strict";
+
+const vertexShaderText =
+[
+'precision mediump float;',
+'',
+'attribute vec3 vertPosition;',
+'attribute vec3 vertColor;',
+'',
+'varying vec4 fragColor;',
+'varying vec3 loc;',
+'',
+'uniform mat4 uRotation;',
+'uniform vec2 pointA;',
+'uniform vec2 pointB;',
+'uniform float depthOffset;',
+'',
+'void main()',
+'{',
+'  vec2 B1 = vec2(pointB.x-pointA.x, pointB.y-pointA.y);',
+'  vec2 p = vec2(vertPosition.x-pointA.x, vertPosition.y-pointA.y);',
+'',
+'  float Btheta = atan(B1.y,B1.x);',
+'  float C = cos(-Btheta);',
+'  float S = sin(-Btheta);',
+'  vec2 X = vec2(C*p.x-S*p.y, S*p.x+C*p.y);',
+'',
+'  float AB = sqrt(B1.x*B1.x + B1.y*B1.y);',
+'  gl_Position = vec4((X.x/AB)*2.0-1.0, vertPosition.z*2.0-1.0, X.y, 1.0);',
+'  fragColor = vec4(vertColor, 1.0);',
+'  loc = vec3(gl_Position.x,gl_Position.y,gl_Position.z/depthOffset);',
+'}'
+].join('\n');
+
+const fragmentShaderText =
+[
+'precision mediump float;',
+'',
+'varying vec4 fragColor;',
+'varying vec3 loc;',
+'',
+'void main()',
+'{',
+'  if (loc.z*loc.z > 1.0 || loc.x*loc.x > 1.0 || loc.y*loc.y > 1.0) {',
+'    discard;',
+'  } else {',
+'    gl_FragColor = fragColor;',
+'  }',
+'}',
+''
+].join('\n');
+
+const data = {
+  vertices: []
+};
+
+const state = {
+  depthOffset: new Float32Array([0.05]),
+  pointA: new Float32Array([0.25,0.25]),
+  pointB: new Float32Array([0.75,0.75]),
+  dragging: '',
+  dragstartptr: [0,0],
+  dragstartpoints: [0,0]
+};
+
+const tools = {
+  add: function(a,b) { return a.map((v,i) => v+b[i]); },
+  distance: function(a,b) {
+    return Math.sqrt(Math.pow(b[0]-a[0],2)+Math.pow(b[1]-a[1],2));
+  },
+  rotatePoint: function(pt, axis, dtheta) {
+    const R = tools.distance(pt,axis);
+    const theta0 = Math.atan2(pt[1]-axis[1],pt[0]-axis[0]);
+    const theta1 = theta0+dtheta*Math.PI/180;
+    return tools.add(axis,[R*Math.cos(theta1),R*Math.sin(theta1)]);
+  },
+  project: function(a,b,x) {
+    const B = [b[0]-a[0], b[1]-a[1]];
+    const X = [x[0]-a[0], x[1]-a[1]];
+    const Btheta = Math.atan2(B[1], B[0]);
+    const C=Math.cos(-Btheta), S=Math.sin(-Btheta);
+    return [C*X[0]-S*X[1], S*X[0]+C*X[1]];
+  },
+  unproject: function(a,b,x) {
+    let B = [b[0]-a[0], b[1]-a[1]];
+    let Btheta = Math.atan2(B[1],B[0]);
+    let C=Math.cos(Btheta), S=Math.sin(Btheta);
+    return [C*x[0]-S*x[1], S*x[0]+C*x[1]];
+  },
+  canvasSpaceTransform: function(pt, width, height) {
+    // Input values in range (0,1)
+    // Outputs values in Canvas space (upside down, and scaled to width & height)
+    return [width*pt[0], height*(1.0-pt[1])];
+  },
+  rotator: new Float32Array([Math.cos(0), -Math.sin(0),  0, 0,
+                             Math.sin(0),  Math.cos(0),  0, 0,
+                             0,            0,            1, 0,
+                             0,            0,            0, 1])
+};
+
+const startDrag = (e) => {
+  e.preventDefault();
+  const rect = document.getElementById("map-overlay").getBoundingClientRect();
+  const pos = [(e.clientX - rect.left)/rect.width,
+            1-(e.clientY - rect.top)/rect.width];
+  const AX = tools.distance(pos,state.pointA);
+  const BX = tools.distance(pos,state.pointB);
+  if (e.buttons === 1 && (AX < 0.05 || BX < 0.05)) {
+    state.dragging = (AX < BX) ? "A" : "B";
+  } else if (Math.abs(tools.project(state.pointA, state.pointB, pos)[1]) < 0.05) {
+    state.dragging = "AB";
+  } else {
+    state.dragging = "";
+  }
+  if (state.dragging !== "") {
+    state.dragstartpoints = [[state.pointA[0],state.pointA[1]],
+                             [state.pointB[0],state.pointB[1]]];
+    state.dragstartptr = pos;
+  }
+};
+
+const stopDrag = ((e) => state.dragging = "");
+
+const insertDataPoint = async function(p) {
+  const dx=0.01,dy=0.01,dz=0.02;
+  const pt=[0,0,0], plf=[-dx,-dy,dz], prf=[dx,-dy,dz], pb=[0,-dy,-dz];
+  const R=[1,0,0],G=[0,1,0],B=[0,0,1];
+  data.vertices = data.vertices.concat(tools.add(p,plf), R, tools.add(p,prf), G, tools.add(p,pt), B); // front face
+  data.vertices = data.vertices.concat(tools.add(p,prf), G, tools.add(p,pb),  R, tools.add(p,pt), B); // Right face
+  data.vertices = data.vertices.concat(tools.add(p,pb),  R, tools.add(p,plf), R, tools.add(p,pt), B); // Left face
+  data.vertices = data.vertices.concat(tools.add(p,pb),  R, tools.add(p,prf), G, tools.add(p,plf), B); // Bottom face
+}
+
+const loadData = async function() {
+  // await fetch('./points.json').then(r => r.json()).then(d=>{
+  //   data.vertices = d.points;
+  // });
+  for (let i=0; i<1000; i++) {
+    const p = [(Math.random()),(Math.random()),(Math.random())];
+    await insertDataPoint(p);
+  }
+}
+
+const updateMapOverlay = function() {
+  const mapCanvas = document.getElementById("map-overlay");
+  const ctx = mapCanvas.getContext("2d");
+  const W=mapCanvas.width, H=mapCanvas.height;
+  //ctx.globalCompositeOperation = 'destination-over';
+  ctx.clearRect(0, 0, W, H); // clear canvas
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
+  ctx.moveTo(...tools.canvasSpaceTransform(state.pointA,W,H));
+  ctx.lineTo(...tools.canvasSpaceTransform(state.pointB,W,H));
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+  const plus_box = tools.unproject(state.pointA,state.pointB,[0,state.depthOffset]);
+  const minus_box = tools.unproject(state.pointA,state.pointB,[0,-state.depthOffset]);
+  ctx.moveTo(...tools.canvasSpaceTransform(tools.add(state.pointA,minus_box),W,H));
+  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointA,plus_box), W,H));
+  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointB,plus_box), W,H));
+  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointB,minus_box),W,H));
+  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointA,minus_box),W,H));
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.font = "25px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const Atxtoffset = tools.unproject(state.pointA,state.pointB,[-0.03,0]);
+  const Btxtoffset = tools.unproject(state.pointA,state.pointB,[ 0.03,0]);
+  ctx.fillText("A", ...tools.canvasSpaceTransform(tools.add(state.pointA,Atxtoffset),W,H));
+  ctx.fillText("B", ...tools.canvasSpaceTransform(tools.add(state.pointB,Btxtoffset),W,H));
+  ctx.stroke();
+}
+
+const setupBackgroundMap = async function() {
+  document.getElementById("map-div").oncontextmenu = (e) => startDrag(e);
+  updateMapOverlay();
+
+  const mapCanvas = document.getElementById("map-background");
+  const ctx = mapCanvas.getContext("2d");
+  const W=mapCanvas.width, H=mapCanvas.height;
+  //ctx.globalCompositeOperation = 'destination-over';
+  ctx.clearRect(0, 0, W, H); // clear canvas
+  ctx.beginPath();
+  for (let i=0; i<data.vertices.length; i++) {
+    if (i%(72)==0) {
+      let d = Math.floor(255*data.vertices[i+2]);
+      ctx.strokeStyle = `rgba(0, ${d}, ${d}, 1.0)`;
+      ctx.closePath();
+      ctx.beginPath();
+      ctx.arc(...tools.canvasSpaceTransform([data.vertices[i],data.vertices[i+1]],W,H), 3, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+  }
+}
+
+const InitApp = async function() {
+  console.log("This is working");
+  const dataPromise = loadData();
+  updateMapOverlay();
+
+  const gl = document.getElementById("xsection").getContext("webgl");
+
+  if (!gl) {
+    alert('Your browser does not support WebGL');
+    return;
+  }
+
+  //gl.clearColor(0.75,0.85,0.8,1.0);
+  gl.clearColor(0.75,0.75,0.75,1.0);
+  //gl.clearColor(0.0,0.0,0.0,0.0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.enable(gl.CULL_FACE);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.blendEquation(gl.FUNC_ADD);
+
+  const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+  const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+
+  gl.shaderSource(vertexShader, vertexShaderText);
+  gl.shaderSource(fragmentShader, fragmentShaderText);
+
+  gl.compileShader(vertexShader);
+  if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+    console.error('ERROR compiling vertex shader!',
+                  gl.getShaderInfoLog(vertexShader));
+    return;
+  }
+  gl.compileShader(fragmentShader);
+  if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+    console.error('ERROR compiling fragment shader!',
+                  gl.getShaderInfoLog(fragmentShader));
+    return;
+  }
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('ERROR linking program!', gl.getProgramInfoLog(program));
+    return;
+  }
+
+  gl.validateProgram(program);
+  if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
+    console.error('ERROR validating program!', gl.getProgramInfoLog(program));
+    return;
+  }
+
+  //
+  // Create buffers
+  //
+  let triangleVertexBufferObject = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBufferObject);
+  await dataPromise;
+  setupBackgroundMap();
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data.vertices), gl.STATIC_DRAW);
+
+  const positionAttribLocation = gl.getAttribLocation(program,'vertPosition');
+  const colorAttribLocation = gl.getAttribLocation(program,'vertColor');
+  gl.vertexAttribPointer(
+    positionAttribLocation, // locations
+    3, // number of elements per attribute
+    gl.FLOAT, // type of elements
+    gl.FALSE, // normalization.
+    6 * Float32Array.BYTES_PER_ELEMENT, // size of an individual attribute
+    0 // Offset from beginning of a single vertex to this attribute
+  );
+  gl.vertexAttribPointer(
+    colorAttribLocation, // locations
+    3, // number of elements per attribute
+    gl.FLOAT, // type of elements
+    gl.FALSE, // normalization.
+    6 * Float32Array.BYTES_PER_ELEMENT, // size of an individual attribute
+    2 * Float32Array.BYTES_PER_ELEMENT // Offset from beginning of a single vertex to this attribute
+  );
+
+  gl.enableVertexAttribArray(positionAttribLocation);
+  gl.enableVertexAttribArray(colorAttribLocation);
+
+  gl.useProgram(program);
+
+  let uRotationUniformLocation = gl.getUniformLocation(program, 'uRotation');
+  let pointAUniformLocation = gl.getUniformLocation(program, 'pointA');
+  let pointBUniformLocation = gl.getUniformLocation(program, 'pointB');
+  let depthOffsetUniformLocation = gl.getUniformLocation(program, 'depthOffset');
+  gl.uniformMatrix4fv(uRotationUniformLocation, gl.FALSE, tools.rotator);
+  gl.uniform2fv(pointAUniformLocation, state.pointA);
+  gl.uniform2fv(pointBUniformLocation, state.pointB);
+  gl.uniform1f(depthOffsetUniformLocation, state.depthOffset[0]);
+
+  const AlabelSpan = document.getElementById('Alabel');
+  const BlabelSpan = document.getElementById('Blabel');
+  const AspectLabelSpan = document.getElementById('AspectLabel');
+
+  let s, c, degreesPerSecond=45, currentAngle=0;
+  const loop = async function (currentTime) {
+    // currentTime = performance.now()/1000;
+    // currentAngle = currentTime*degreesPerSecond;
+    s = Math.sin(currentAngle*Math.PI/180);
+    c = Math.cos(currentAngle*Math.PI/180);
+    tools.rotator[0] = c; tools.rotator[1] = -s;
+    tools.rotator[4] = s; tools.rotator[5] = c;
+    gl.uniformMatrix4fv(uRotationUniformLocation, gl.FALSE, tools.rotator);
+
+    gl.uniform2fv(pointAUniformLocation, state.pointA);
+    gl.uniform2fv(pointBUniformLocation, state.pointB);
+    gl.uniform1f(depthOffsetUniformLocation, state.depthOffset[0]);
+
+    AlabelSpan.textContent = `A: (${state.pointA[0].toFixed(2)}, ${state.pointA[1].toFixed(2)})`;
+    BlabelSpan.textContent = `B: (${state.pointB[0].toFixed(2)}, ${state.pointB[1].toFixed(2)})`;
+    AspectLabelSpan.textContent = `Depth: ${state.depthOffset[0].toFixed(2)}`;
+
+    //gl.clearColor(0.0,0.0,0.0,0.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0/*offset*/, data.vertices.length/6/*vertex count*/);
+  };
+
+  document.body.addEventListener('mousedown', (e) => startDrag(e));
+  document.body.addEventListener('mouseup', (e) => stopDrag(e));
+  document.body.addEventListener('mousemove', (e) => {
+    if (e.buttons > 0) {
+      const rect = document.getElementById("map-overlay").getBoundingClientRect();
+      const pos = [(e.clientX - rect.left)/rect.width,
+                1-(e.clientY - rect.top)/rect.width];
+      if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
+        const dx = [pos[0]-state.dragstartptr[0], pos[1]-state.dragstartptr[1]];
+        if (e.buttons === 1) { // left click drag
+          if (state.dragging === 'A') {
+            state.pointA[0] = state.dragstartpoints[0][0] + dx[0];
+            state.pointA[1] = state.dragstartpoints[0][1] + dx[1];
+          } else if (state.dragging === 'B') {
+            state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
+            state.pointB[1] = state.dragstartpoints[1][1] + dx[1];
+          }
+        } else if (e.buttons === 2 && state.dragging === 'AB') { // right click drag
+          state.pointA[0] = state.dragstartpoints[0][0] + dx[0];
+          state.pointA[1] = state.dragstartpoints[0][1] + dx[1];
+          state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
+          state.pointB[1] = state.dragstartpoints[1][1] + dx[1];
+        }
+        window.requestAnimationFrame(updateMapOverlay);
+        window.requestAnimationFrame(loop);
+      }
+    }
+  });
+
+  document.body.addEventListener('keydown', (e) => {
+    let move;
+    switch (e.code) {
+      case 'KeyA':
+        if (e.key === 'a')
+          state.depthOffset[0] *= 0.98;
+        else
+          state.depthOffset[0] *= 1.02;
+
+        state.depthOffset[0] = Math.max(state.depthOffset[0],0.01);
+        break;
+      case 'ArrowLeft':
+        if (e.shiftKey) {
+          //currentAngle -= 2;
+          state.pointA[0] -= 0.1;
+        } else if (e.ctrlKey) {
+          state.pointB[0] -= 0.1;
+        } else {
+          let axis = [(state.pointA[0]+state.pointB[0])/2, (state.pointA[1]+state.pointB[1])/2];
+          const A1 = tools.rotatePoint(state.pointA, axis, 3.0);
+          const B1 = tools.rotatePoint(state.pointB, axis, 3.0);
+          state.pointA[0] = A1[0]; state.pointA[1] = A1[1];
+          state.pointB[0] = B1[0]; state.pointB[1] = B1[1];
+        }
+        break;
+      case 'ArrowRight':
+        if (e.shiftKey) {
+          //currentAngle += 2;
+          state.pointA[0] += 0.1;
+        } else if (e.ctrlKey) {
+          state.pointB[0] += 0.1;
+        } else {
+          let axis = [(state.pointA[0]+state.pointB[0])/2, (state.pointA[1]+state.pointB[1])/2];
+          const A1 = tools.rotatePoint(state.pointA, axis, -3.0);
+          const B1 = tools.rotatePoint(state.pointB, axis, -3.0);
+          state.pointA[0] = A1[0]; state.pointA[1] = A1[1];
+          state.pointB[0] = B1[0]; state.pointB[1] = B1[1];
+        }
+        break;
+      case 'ArrowUp':
+        move = tools.unproject(state.pointA, state.pointB, [0.0, tools.distance(state.pointA, state.pointB)*0.01]);
+        state.pointA[0] += move[0]; state.pointA[1] += move[1];
+        state.pointB[0] += move[0]; state.pointB[1] += move[1];
+        // if (e.ctrlKey) {
+        //   state.pointB[1] += 0.1;
+        // } else {
+        //   state.pointA[1] += 0.1;
+        // }
+        break;
+      // key code for right arrow
+      case 'ArrowDown':
+        move = tools.unproject(state.pointA, state.pointB, [0.0, -tools.distance(state.pointA, state.pointB)*0.01]);
+        state.pointA[0] += move[0]; state.pointA[1] += move[1];
+        state.pointB[0] += move[0]; state.pointB[1] += move[1];
+        // if (e.ctrlKey) {
+        //   state.pointB[1] -= 0.1;
+        // } else {
+        //   state.pointA[1] -= 0.1;
+        // }
+        break;
+      case 'Space':
+        state.pointA[0] = -1.0; state.pointA[1] = -1.0;
+        state.pointB[0] =  1.0; state.pointB[1] =  1.0;
+        break;
+    }
+    window.requestAnimationFrame(updateMapOverlay);
+    window.requestAnimationFrame(loop);
+  });
+
+  window.requestAnimationFrame(loop);
+};

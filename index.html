@@ -1,0 +1,54 @@
+<html>
+  <head>
+    <title>CRB Cross Sections</title>
+    <style>
+      body {
+        background-color:grey;
+        color:white;
+      }
+      #map-div {
+        display:block;
+        position:relative;
+        width:400;
+        height:400;
+        border:1px solid black;
+        margin:2em auto;
+        background-color: #999;
+      }
+      #map-div>canvas {
+        position:absolute;
+        top:0;
+        left:0;
+      }
+      #xsection-div {
+        display:block;
+        position:relative;
+        background-color: #999/*rgba(191,216,204,255)*/;
+        border:1px solid black;
+        width:800;
+        height:400;
+        margin:0 auto;
+      }
+    </style>
+  </head>
+  <body onload="InitApp();">
+    <div id='map-div'>
+      <canvas id="map-background" width=400 height=400>
+        Your browser does not support HTML5.
+      </canvas>
+      <canvas id="map-overlay" width=400 height=400>
+      </canvas>
+    </div>
+
+    <div id="xsection-div">
+      <canvas id="xsection" width="800" height="400">
+      </canvas>
+      <div style='display:block;'>
+        <span id='Alabel'></span>
+        <span id='Blabel'></span>
+        <span id='AspectLabel'></span>
+      </div>
+    </div>
+    <script src="./app2.js"></script>
+  </body>
+</html>
