@@ -4,7 +4,7 @@ const vertexShaderText = `
 precision mediump float;
 
 attribute vec3 vertPosition;
-attribute float lowerUnit;
+// attribute float lowerUnit;
 attribute float upperUnit;
 
 varying vec4 fragColor;
@@ -17,6 +17,35 @@ uniform float depthOffset;
 
 void main()
 {
+  vec3 c1 = vec3(183.0,231.0,255.0)/255.0;
+  vec3 c2 = vec3(109.0,199.0,255.0)/255.0;
+  vec3 c3 = vec3(205.0,255.0,160.0)/255.0;
+  vec3 c4 = vec3(136.0,245.0,129.0)/255.0;
+  vec3 c5 = vec3(255.0,164.0,163.0)/255.0;
+  vec3 c6 = vec3(255.0,72.0,74.0)/255.0;
+  vec3 c7 = vec3(255.0,219.0,130.0)/255.0;
+  vec3 c8 = vec3(255.0,168.0,47.0)/255.0;
+
+  if (upperUnit == 0.0) {
+    fragColor = vec4(c1, 1.0);
+  } else if (upperUnit == 1.0) {
+    fragColor = vec4(c2, 1.0);
+  } else if (upperUnit == 2.0) {
+    fragColor = vec4(c3, 1.0);
+  } else if (upperUnit == 3.0) {
+    fragColor = vec4(c4, 1.0);
+  } else if (upperUnit == 4.0) {
+    fragColor = vec4(c5, 1.0);
+  } else if (upperUnit == 5.0) {
+    fragColor = vec4(c6, 1.0);
+  } else if (upperUnit == 6.0) {
+    fragColor = vec4(c7, 1.0);
+  } else if (upperUnit == 7.0) {
+    fragColor = vec4(c8, 1.0);
+  } else {
+    fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+  }
+
   vec2 B1 = vec2(pointB.x-pointA.x, pointB.y-pointA.y);
   vec2 p = vec2(vertPosition.x-pointA.x, vertPosition.y-pointA.y);
 
@@ -30,7 +59,6 @@ void main()
   gl_Position = vec4((X.x/AB)*2.0-1.0, pitchAdjusted, X.y, 1.0);
   gl_PointSize = 3.0;
 
-  fragColor = vec4(upperUnit/7.0, lowerUnit/7.0, 1.0, 1.0); // 8 possible units
   loc = vec3(gl_Position.x,gl_Position.y,gl_Position.z/depthOffset);
 }`;
 
@@ -62,6 +90,7 @@ const state = {
   dragging: '',
   dragstartptr: [0,0],
   dragstartpoints: [0,0],
+  mapbounds: [[-122,45], [-110,49]]
 };
 
 const tools = {
@@ -88,10 +117,24 @@ const tools = {
     let C=Math.cos(Btheta), S=Math.sin(Btheta);
     return [C*x[0]-S*x[1], S*x[0]+C*x[1]];
   },
-  canvasSpaceTransform: function(pt, width, height) {
+  xy2canvas: function(pt, width, height) {
     // Input values in range (0,1)
     // Outputs values in Canvas space (upside down, and scaled to width & height)
     return [width*pt[0], height*(1.0-pt[1])];
+  },
+  map2xy: function(lonlat) {
+    const mapwidth = state.mapbounds[1][0]-state.mapbounds[0][0];
+    const mapheight = state.mapbounds[1][1]-state.mapbounds[0][1];
+    const x = (lonlat[0]-state.mapbounds[0][0])/mapwidth;
+    const y = (lonlat[1]-state.mapbounds[0][1])/mapheight;
+    return [x,y];
+  },
+  xy2map: function(xy) {
+    const mapwidth = state.mapbounds[1][0]-state.mapbounds[0][0];
+    const mapheight = state.mapbounds[1][1]-state.mapbounds[0][1];
+    const lon = xy[0]*mapwidth + state.mapbounds[0][0];
+    const lat = xy[1]*mapheight + state.mapbounds[0][1];
+    return [lon,lat];
   }
 };
 
@@ -145,8 +188,8 @@ const updateMapOverlay = function() {
 
   ctx.beginPath();
   ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
-  ctx.moveTo(...tools.canvasSpaceTransform(state.pointA,W,H));
-  ctx.lineTo(...tools.canvasSpaceTransform(state.pointB,W,H));
+  ctx.moveTo(...tools.xy2canvas(state.pointA,W,H));
+  ctx.lineTo(...tools.xy2canvas(state.pointB,W,H));
   ctx.closePath();
   ctx.stroke();
 
@@ -154,11 +197,11 @@ const updateMapOverlay = function() {
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
   const plus_box = tools.unproject(state.pointA,state.pointB,[0,state.depthOffset]);
   const minus_box = tools.unproject(state.pointA,state.pointB,[0,-state.depthOffset]);
-  ctx.moveTo(...tools.canvasSpaceTransform(tools.add(state.pointA,minus_box),W,H));
-  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointA,plus_box), W,H));
-  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointB,plus_box), W,H));
-  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointB,minus_box),W,H));
-  ctx.lineTo(...tools.canvasSpaceTransform(tools.add(state.pointA,minus_box),W,H));
+  ctx.moveTo(...tools.xy2canvas(tools.add(state.pointA,minus_box),W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointA,plus_box), W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointB,plus_box), W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointB,minus_box),W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointA,minus_box),W,H));
   ctx.closePath();
   ctx.stroke();
 
@@ -168,14 +211,23 @@ const updateMapOverlay = function() {
   ctx.textBaseline = "middle";
   const Atxtoffset = tools.unproject(state.pointA,state.pointB,[-0.03,0]);
   const Btxtoffset = tools.unproject(state.pointA,state.pointB,[ 0.03,0]);
-  ctx.fillText("A", ...tools.canvasSpaceTransform(tools.add(state.pointA,Atxtoffset),W,H));
-  ctx.fillText("B", ...tools.canvasSpaceTransform(tools.add(state.pointB,Btxtoffset),W,H));
+  ctx.fillText("A", ...tools.xy2canvas(tools.add(state.pointA,Atxtoffset),W,H));
+  ctx.fillText("B", ...tools.xy2canvas(tools.add(state.pointB,Btxtoffset),W,H));
   ctx.stroke();
 }
 
 const setupBackgroundMap = async function() {
   document.getElementById("map-div").oncontextmenu = (e) => startDrag(e);
   updateMapOverlay();
+
+  const cmap = [[166,206,227],
+                [31,120,180],
+                [178,223,138],
+                [51,160,44],
+                [251,154,153],
+                [227,26,28],
+                [253,191,111],
+                [255,127,0]];
 
   const mapCanvas = document.getElementById("map-background");
   const ctx = mapCanvas.getContext("2d");
@@ -188,12 +240,14 @@ const setupBackgroundMap = async function() {
     if (i%5==0) {
       const lon = dv.getFloat32(data.elementSize*i+0,true);
       const lat = dv.getFloat32(data.elementSize*i+4,true);
-      const lowerUnit = dv.getFloat32(data.elementSize*i+12,true);
+      //const lowerUnit = dv.getFloat32(data.elementSize*i+12,true);
       const upperUnit = dv.getFloat32(data.elementSize*i+16,true);
-      ctx.strokeStyle = `rgba(${255*upperUnit/7.0}, ${255*lowerUnit/7.0}, 255, 1.0)`;
+      const color = cmap[Math.round(upperUnit)];
+      //ctx.strokeStyle = `rgba(${255*upperUnit/7.0}, ${255*upperUnit/7.0}, 255, 1.0)`;
+      ctx.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1.0)`;
       ctx.closePath();
       ctx.beginPath();
-      ctx.arc(...tools.canvasSpaceTransform([lon,lat],W,H), 3, 0, 2 * Math.PI);
+      ctx.arc(...tools.xy2canvas([lon,lat],W,H), 2, 0, 2 * Math.PI);
       ctx.stroke();
     }
   }
@@ -269,8 +323,8 @@ const InitApp = async function() {
   }
 
   //gl.clearColor(0.75,0.85,0.8,1.0);
-  gl.clearColor(0.75,0.75,0.75,1.0);
-  //gl.clearColor(0.0,0.0,0.0,0.0);
+  //gl.clearColor(0.75,0.75,0.75,1.0);
+  gl.clearColor(0.0,0.0,0.0,0.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.enable(gl.DEPTH_TEST);
@@ -333,9 +387,9 @@ const InitApp = async function() {
   );
   gl.enableVertexAttribArray(positionAttribLocation);
 
-  const unit1AttribLocation = gl.getAttribLocation(program,'lowerUnit');
-  gl.vertexAttribPointer(unit1AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 12);
-  gl.enableVertexAttribArray(unit1AttribLocation);
+  // const unit1AttribLocation = gl.getAttribLocation(program,'lowerUnit');
+  // gl.vertexAttribPointer(unit1AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 12);
+  // gl.enableVertexAttribArray(unit1AttribLocation);
 
   const unit2AttribLocation = gl.getAttribLocation(program,'upperUnit');
   gl.vertexAttribPointer(unit2AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 16);
