@@ -1,10 +1,27 @@
 "use strict";
 
+const unitNames = ['OLDER','IMNAHA','CRB','GRR1','GRN1','GRR2','GRN2','YOUNGER'];
+
+/* https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=8 */
+const colorPallet = [
+  //[183.0,231.0,255.0],
+  [0,0,0],
+  [109.0,199.0,255.0],
+  [205.0,255.0,160.0],
+  [136.0,245.0,129.0],
+  [255.0,164.0,163.0],
+  [255.0,72.0,74.0],
+  [255.0,219.0,130.0],
+  [255.0,168.0,47.0]];
+
+const c2str = (c) => `${c[0]},${c[1]},${c[2]}`;
+const normc2str = (c) => `${c[0]/255},${c[1]/255},${c[2]/255}`;
+
 const vertexShaderText = `
 precision mediump float;
 
 attribute vec3 vertPosition;
-// attribute float lowerUnit;
+attribute float lowerUnit;
 attribute float upperUnit;
 
 varying vec4 fragColor;
@@ -17,31 +34,22 @@ uniform float depthOffset;
 
 void main()
 {
-  vec3 c1 = vec3(183.0,231.0,255.0)/255.0;
-  vec3 c2 = vec3(109.0,199.0,255.0)/255.0;
-  vec3 c3 = vec3(205.0,255.0,160.0)/255.0;
-  vec3 c4 = vec3(136.0,245.0,129.0)/255.0;
-  vec3 c5 = vec3(255.0,164.0,163.0)/255.0;
-  vec3 c6 = vec3(255.0,72.0,74.0)/255.0;
-  vec3 c7 = vec3(255.0,219.0,130.0)/255.0;
-  vec3 c8 = vec3(255.0,168.0,47.0)/255.0;
-
   if (upperUnit == 0.0) {
-    fragColor = vec4(c1, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[0])}, 1.0);
   } else if (upperUnit == 1.0) {
-    fragColor = vec4(c2, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[1])}, 1.0);
   } else if (upperUnit == 2.0) {
-    fragColor = vec4(c3, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[2])}, 1.0);
   } else if (upperUnit == 3.0) {
-    fragColor = vec4(c4, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[3])}, 1.0);
   } else if (upperUnit == 4.0) {
-    fragColor = vec4(c5, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[4])}, 1.0);
   } else if (upperUnit == 5.0) {
-    fragColor = vec4(c6, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[5])}, 1.0);
   } else if (upperUnit == 6.0) {
-    fragColor = vec4(c7, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[6])}, 1.0);
   } else if (upperUnit == 7.0) {
-    fragColor = vec4(c8, 1.0);
+    fragColor = vec4(${normc2str(colorPallet[7])}, 1.0);
   } else {
     fragColor = vec4(0.0, 0.0, 0.0, 1.0);
   }
@@ -53,11 +61,21 @@ void main()
   float C = cos(-Btheta);
   float S = sin(-Btheta);
   vec2 X = vec2(C*p.x-S*p.y, S*p.x+C*p.y);
+  float offset = 0.0;
+
+  if (lowerUnit > 0.5) {
+    gl_PointSize = 3.0;
+    offset = depthOffset/20.0;
+  } else {
+    gl_PointSize = 5.0;
+  }
 
   float AB = sqrt(B1.x*B1.x + B1.y*B1.y);
-  float pitchAdjusted = (2.0*vertPosition.z-1.0 + X.y/depthOffset*sin(tilt));
-  gl_Position = vec4((X.x/AB)*2.0-1.0, pitchAdjusted, X.y, 1.0);
-  gl_PointSize = 3.0;
+  //float pitchAdjusted = (2.0*vertPosition.z-1.0 + X.y/depthOffset*sin(tilt));
+  float pitchAdjusted = (2.0*(vertPosition.z + X.y/AB*sin(tilt))-1.0);
+  gl_Position = vec4((X.x/AB)*2.0-1.0, pitchAdjusted, X.y-offset, 1.0);
+
+
 
   loc = vec3(gl_Position.x,gl_Position.y,gl_Position.z/depthOffset);
 }`;
@@ -68,29 +86,35 @@ precision mediump float;
 varying vec4 fragColor;
 varying vec3 loc;
 
+//uniform sampler2D spriteTexture;
+
 void main()
 {
   if (loc.z*loc.z > 1.0 || loc.x*loc.x > 1.0 || loc.y*loc.y > 1.0) {
     discard;
   } else {
+    //gl_FragColor = texture2D(spriteTexture,gl_PointCoord);
     gl_FragColor = fragColor;
   }
 }`;
 
 const data = {
   vertices: null,
-  elementSize: 20
+  elementSize: 20,
+  limits: [[null,null],[null,null]]
 };
 
 const state = {
-  depthOffset: new Float32Array([0.05]),
+  depthOffset: new Float32Array([0.012]),
   tilt: new Float32Array([0.0]),
-  pointA: new Float32Array([0.82,0.4]),
-  pointB: new Float32Array([0.86,0.52]),
+  // pointA: new Float32Array([0.82,0.4]),
+  // pointB: new Float32Array([0.86,0.52]),
+  pointA: new Float32Array([0.828,0.506]),
+  pointB: new Float32Array([0.919,0.432]),
   dragging: '',
   dragstartptr: [0,0],
   dragstartpoints: [0,0],
-  mapbounds: [[-122,45], [-110,49]]
+  mapbounds: [[-124.5,43.5],[-115.5,48.5]] // must be the same as data.limits for now.
 };
 
 const tools = {
@@ -122,18 +146,18 @@ const tools = {
     // Outputs values in Canvas space (upside down, and scaled to width & height)
     return [width*pt[0], height*(1.0-pt[1])];
   },
-  map2xy: function(lonlat) {
-    const mapwidth = state.mapbounds[1][0]-state.mapbounds[0][0];
-    const mapheight = state.mapbounds[1][1]-state.mapbounds[0][1];
-    const x = (lonlat[0]-state.mapbounds[0][0])/mapwidth;
-    const y = (lonlat[1]-state.mapbounds[0][1])/mapheight;
+  lonlat2xy: function(lonlat) {
+    const mapwidth = data.limits[1][0]-data.limits[0][0];
+    const mapheight = data.limits[1][1]-data.limits[0][1];
+    const x = (lonlat[0]-data.limits[0][0])/mapwidth;
+    const y = (lonlat[1]-data.limits[0][1])/mapheight;
     return [x,y];
   },
-  xy2map: function(xy) {
-    const mapwidth = state.mapbounds[1][0]-state.mapbounds[0][0];
-    const mapheight = state.mapbounds[1][1]-state.mapbounds[0][1];
-    const lon = xy[0]*mapwidth + state.mapbounds[0][0];
-    const lat = xy[1]*mapheight + state.mapbounds[0][1];
+  xy2lonlat: function(xy) {
+    const mapwidth = data.limits[1][0]-data.limits[0][0];
+    const mapheight = data.limits[1][1]-data.limits[0][1];
+    const lon = xy[0]*mapwidth + data.limits[0][0];
+    const lat = xy[1]*mapheight + data.limits[0][1];
     return [lon,lat];
   }
 };
@@ -163,6 +187,8 @@ const stopDrag = ((e) => state.dragging = "");
 
 const loadData = async function() {
   return fetch('./points.json').then(r => r.json()).then(d=>{
+    data.limits = d.limits;
+
     const points = d.points;
     const buffer = new ArrayBuffer(data.elementSize*points.length/5);
     const dv = new DataView(buffer);
@@ -175,7 +201,7 @@ const loadData = async function() {
       dv.setFloat32(data.elementSize*i+12, points[5*i+3], true);
       dv.setFloat32(data.elementSize*i+16, points[5*i+4], true);
     }
-    return buffer;
+    data.vertices = buffer;
   });
 }
 
@@ -187,22 +213,30 @@ const updateMapOverlay = function() {
   ctx.clearRect(0, 0, W, H); // clear canvas
 
   ctx.beginPath();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
+  ctx.strokeStyle = 'rgba(0, 0, 0, 1.0)';
   ctx.moveTo(...tools.xy2canvas(state.pointA,W,H));
   ctx.lineTo(...tools.xy2canvas(state.pointB,W,H));
   ctx.closePath();
+  ctx.lineWidth = 5;
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
   const plus_box = tools.unproject(state.pointA,state.pointB,[0,state.depthOffset]);
   const minus_box = tools.unproject(state.pointA,state.pointB,[0,-state.depthOffset]);
+  const midpoint = tools.add(state.pointA,state.pointB);
+  midpoint[0] /= 2; midpoint[1] /= 2;
+  ctx.moveTo(...tools.xy2canvas(tools.add(midpoint,minus_box),W,H));
   ctx.moveTo(...tools.xy2canvas(tools.add(state.pointA,minus_box),W,H));
   ctx.lineTo(...tools.xy2canvas(tools.add(state.pointA,plus_box), W,H));
   ctx.lineTo(...tools.xy2canvas(tools.add(state.pointB,plus_box), W,H));
   ctx.lineTo(...tools.xy2canvas(tools.add(state.pointB,minus_box),W,H));
-  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointA,minus_box),W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(midpoint,minus_box),W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointA,plus_box),W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointB,plus_box),W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(midpoint,minus_box),W,H));
   ctx.closePath();
+  ctx.lineWidth = 1;
   ctx.stroke();
 
   ctx.beginPath();
@@ -220,14 +254,23 @@ const setupBackgroundMap = async function() {
   document.getElementById("map-div").oncontextmenu = (e) => startDrag(e);
   updateMapOverlay();
 
-  const cmap = [[166,206,227],
-                [31,120,180],
-                [178,223,138],
-                [51,160,44],
-                [251,154,153],
-                [227,26,28],
-                [253,191,111],
-                [255,127,0]];
+  const swatches = document.getElementById('swatches');
+  //swatches.style.height = 24*colorPallet.length;
+  for (let i=colorPallet.length-1; i>-1; i--) {
+
+    const e = document.createElement('div');
+    const f = document.createElement('div');
+    f.style.width = 24;
+    f.style.height = 24;
+    f.style.backgroundColor = `rgb(${c2str(colorPallet[i])})`;
+    f.style.display = 'inline-block';
+    const g = document.createElement('span');
+    g.textContent = unitNames[i];
+    g.style.paddingLeft = '1em';
+    e.appendChild(f);
+    e.appendChild(g);
+    swatches.appendChild(e);
+  }
 
   const mapCanvas = document.getElementById("map-background");
   const ctx = mapCanvas.getContext("2d");
@@ -236,19 +279,23 @@ const setupBackgroundMap = async function() {
   ctx.clearRect(0, 0, W, H); // clear canvas
   ctx.beginPath();
   const dv = new DataView(data.vertices);
-  for (let i=0; i<data.vertices.byteLength/data.elementSize; i++) {
-    if (i%5==0) {
-      const lon = dv.getFloat32(data.elementSize*i+0,true);
-      const lat = dv.getFloat32(data.elementSize*i+4,true);
-      //const lowerUnit = dv.getFloat32(data.elementSize*i+12,true);
-      const upperUnit = dv.getFloat32(data.elementSize*i+16,true);
-      const color = cmap[Math.round(upperUnit)];
-      //ctx.strokeStyle = `rgba(${255*upperUnit/7.0}, ${255*upperUnit/7.0}, 255, 1.0)`;
-      ctx.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1.0)`;
-      ctx.closePath();
-      ctx.beginPath();
-      ctx.arc(...tools.xy2canvas([lon,lat],W,H), 2, 0, 2 * Math.PI);
-      ctx.stroke();
+  for (let j=0; j<colorPallet.length; j++) {
+    for (let i=0; i<data.vertices.byteLength/data.elementSize; i++) {
+      if (i%5==0) {
+        const lon = dv.getFloat32(data.elementSize*i+0,true);
+        const lat = dv.getFloat32(data.elementSize*i+4,true);
+        const lowerUnit = dv.getFloat32(data.elementSize*i+12,true);
+        const upperUnit = dv.getFloat32(data.elementSize*i+16,true);
+        if (upperUnit == j) {
+          const color = colorPallet[Math.round(upperUnit)];
+          //ctx.strokeStyle = `rgba(${255*upperUnit/7.0}, ${255*upperUnit/7.0}, 255, 1.0)`;
+          ctx.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1.0)`;
+          ctx.closePath();
+          ctx.beginPath();
+          ctx.arc(...tools.xy2canvas([lon,lat],W,H), 2, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+      }
     }
   }
 }
@@ -372,7 +419,7 @@ const InitApp = async function() {
   //
   let triangleVertexBufferObject = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBufferObject);
-  data.vertices = await dataPromise;
+  await dataPromise;
   //console.log(dv.getFloat32(0,true), dv.getFloat32(4,true), dv.getUint8(12), dv.getUint8(13));
   setupBackgroundMap();
   gl.bufferData(gl.ARRAY_BUFFER, data.vertices, gl.STATIC_DRAW);
@@ -387,13 +434,19 @@ const InitApp = async function() {
   );
   gl.enableVertexAttribArray(positionAttribLocation);
 
-  // const unit1AttribLocation = gl.getAttribLocation(program,'lowerUnit');
-  // gl.vertexAttribPointer(unit1AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 12);
-  // gl.enableVertexAttribArray(unit1AttribLocation);
+  const unit1AttribLocation = gl.getAttribLocation(program,'lowerUnit');
+  gl.vertexAttribPointer(unit1AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 12);
+  gl.enableVertexAttribArray(unit1AttribLocation);
 
   const unit2AttribLocation = gl.getAttribLocation(program,'upperUnit');
   gl.vertexAttribPointer(unit2AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 16);
   gl.enableVertexAttribArray(unit2AttribLocation);
+
+  // const icon = document.getElementById('icon');
+  // const glTexture = gl.createTexture(gl.TEXTURE0);
+  // gl.bindTexture(gl.TEXTURE_2D, glTexture);
+  // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, icon);
+  // gl.generateMipmap(gl.TEXTURE_2D);
 
   gl.useProgram(program);
 
@@ -418,9 +471,11 @@ const InitApp = async function() {
     gl.uniform2fv(pointBUniformLocation, state.pointB);
     gl.uniform1f(depthOffsetUniformLocation, state.depthOffset[0]);
 
-    AlabelSpan.textContent = `A: (${state.pointA[0].toFixed(2)}, ${state.pointA[1].toFixed(2)})`;
-    BlabelSpan.textContent = `B: (${state.pointB[0].toFixed(2)}, ${state.pointB[1].toFixed(2)})`;
-    AspectLabelSpan.textContent = `Thickness: ${(111.0*state.depthOffset[0]*2).toFixed(2)}`;
+    const lonlatA = tools.xy2lonlat(state.pointA);
+    const lonlatB = tools.xy2lonlat(state.pointB);
+    AlabelSpan.textContent = `A: (${lonlatA[0].toFixed(2)}, ${lonlatA[1].toFixed(2)})`;
+    BlabelSpan.textContent = `B: (${lonlatB[0].toFixed(2)}, ${lonlatB[1].toFixed(2)})`;
+    AspectLabelSpan.textContent = `Thickness: ${(111.0*state.depthOffset[0]*2).toFixed(2)} km`;
     PitchLabelSpan.innerHTML = `Pitch: ${(state.tilt[0]*180/Math.PI).toFixed(2)} &#176;`;
 
     //gl.clearColor(0.0,0.0,0.0,0.0);
