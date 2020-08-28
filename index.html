@@ -1,18 +1,22 @@
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>CRB Cross Sections</title>
     <style>
       body {
         background-color:grey;
         color:white;
+        height:100%;
+        margin:0;
+        padding:0;
       }
       #map-div {
         display:block;
         position:relative;
-        width:400;
-        height:400;
+        width:500;
+        height:500;
         border:1px solid black;
-        margin:2em auto;
+        margin:0 auto;
         background-color: #999;
       }
       #map-div>canvas {
@@ -25,28 +29,31 @@
         position:relative;
         background-color: #999/*rgba(191,216,204,255)*/;
         border:1px solid black;
-        width:800;
-        height:400;
-        margin:0 auto;
+        width:1000;
+        height:300;
+        margin:2em auto;
       }
     </style>
   </head>
   <body onload="InitApp();">
-    <div id='map-div'>
-      <canvas id="map-background" width=400 height=400>
-        Your browser does not support HTML5.
-      </canvas>
-      <canvas id="map-overlay" width=400 height=400>
-      </canvas>
-    </div>
+    <div style='padding:2em;'>
+      <div id='map-div'>
+        <canvas id="map-background" width=500 height=500>
+          Your browser does not support HTML5.
+        </canvas>
+        <canvas id="map-overlay" width=500 height=500>
+        </canvas>
+      </div>
 
-    <div id="xsection-div">
-      <canvas id="xsection" width="800" height="400">
-      </canvas>
-      <div style='display:block;'>
-        <span id='Alabel'></span>
-        <span id='Blabel'></span>
-        <span id='AspectLabel'></span>
+      <div id="xsection-div">
+        <canvas id="xsection" width="1000" height="300">
+        </canvas>
+        <div style='display:block;'>
+          <span id='Alabel'></span>
+          <span id='Blabel'></span>
+          <span id='AspectLabel'></span>
+          <span id='PitchLabel'></span>
+        </div>
       </div>
     </div>
     <script src="./app2.js"></script>
