@@ -25,13 +25,13 @@ attribute float isUpperUnit;
 attribute float unitIndex;
 
 varying vec4 fragColor;
-varying float visible;
+varying float isVisible;
 
-uniform float tilt;
+uniform float canvasAspect;
 uniform vec2 pointA;
 uniform vec2 pointB;
-uniform float depthOffset;
-uniform float depthScale;
+uniform float sectionHalfThickness;
+uniform float tilt;
 uniform vec2 scroll;
 uniform float zoom;
 
@@ -44,40 +44,37 @@ void main()
   float Btheta = atan(B1.y,B1.x);
   float C = cos(-Btheta);
   float S = sin(-Btheta);
-  vec3 X = vec3(C*p.x-S*p.y, (vtxPosition.z-0.5)*depthScale, S*p.x+C*p.y);
+  vec3 X = vec3(C*p.x-S*p.y, (vtxPosition.z-0.5), S*p.x+C*p.y);
 
-  if (X.z*X.z > depthOffset*depthOffset) {
-    visible = 0.0;
+  if (X.z*X.z > sectionHalfThickness*sectionHalfThickness) {
+    isVisible = 0.0;
   } else {
-    visible = 1.0;
-    float offset = 0.0;
+    isVisible = 1.0;
+
+    // Upper unit should be smaller and in front of lower unit point.
+    float pointOffset = 0.0;
     if (isUpperUnit > 0.5) {
       gl_PointSize = 7.0;
     } else {
       gl_PointSize = 3.0;
-      offset = 0.001;
+      pointOffset = -0.001;
     }
 
-    C = cos(-tilt/2.0); S = sin(-tilt/2.0);
+    // Scale & shift lateral dimensions
+    float AB = sqrt(B1.x*B1.x + B1.y*B1.y);
+    X = vec3(X.x/AB-0.5, X.y, X.z/AB*canvasAspect);
+
+    // Do tilt (pitch) transform
+    C = cos(-tilt); S = sin(-tilt);
     X = vec3(X.x, (C*X.y-S*X.z), (S*X.y+C*X.z));
 
-    // scale depth
-    vec3 dHat = vec3(0.0, cos(tilt/2.0), sin(tilt/2.0));
-    float Xd = X.y*dHat.y + X.z*dHat.z;
-    // scale y axis (now z axis from view perspective)
-    vec3 yHat = vec3(0.0, sin(tilt/2.0), cos(tilt/2.0));
-    float Xy = X.y*yHat.y + X.z*yHat.z;
-
-    float AB = sqrt(B1.x*B1.x + B1.y*B1.y); // lateral scaling
-    // scale x axis
-    X = vec3(X.x/AB-0.5, X.y, X.z);
-    // scale y and z axes
-    X = X - Xd*(1.0 - 1.0/depthScale)*dHat - Xy*(1.0 - 1.0/AB)*yHat;
-
-    // apply zoom
+    // Zoom
     X = X * vec3(1.0, zoom, zoom);
 
-    gl_Position = vec4(2.0*(X.x+scroll.x), 2.0*(X.y+scroll.y), 2.0*X.z-offset, 1.0);
+    // Vertical scroll
+    X += vec3(scroll.x, scroll.y, 0.0);
+
+    gl_Position = vec4(2.0*X.x, 2.0*X.y, 2.0*X.z+pointOffset, 1.0);
 
     float alpha = 1.0;
     if (unitIndex == 0.0) {
@@ -108,11 +105,11 @@ const fragmentShaderText = `
 precision mediump float;
 
 varying vec4 fragColor;
-varying float visible;
+varying float isVisible;
 
 void main()
 {
-  if (visible > 0.5) {
+  if (isVisible > 0.5) {
     gl_FragColor = fragColor;
   } else {
     discard;
@@ -126,7 +123,7 @@ const data = {
 };
 
 const state = {
-  depthOffset: new Float32Array([0.012]),
+  sectionHalfThickness: new Float32Array([0.012]),
   tilt: new Float32Array([0.0]),
   // pointA: new Float32Array([0.82,0.4]),
   // pointB: new Float32Array([0.86,0.52]),
@@ -322,8 +319,8 @@ const updateMapOverlay = function() {
 
   ctx.beginPath();
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-  const plus_box = tools.unproject(state.pointA,state.pointB,[0,state.depthOffset]);
-  const minus_box = tools.unproject(state.pointA,state.pointB,[0,-state.depthOffset]);
+  const plus_box = tools.unproject(state.pointA,state.pointB,[0,state.sectionHalfThickness]);
+  const minus_box = tools.unproject(state.pointA,state.pointB,[0,-state.sectionHalfThickness]);
   const midpoint = tools.add(state.pointA,state.pointB);
   midpoint[0] /= 2; midpoint[1] /= 2;
   ctx.moveTo(...tools.xy2canvas(tools.add(midpoint,minus_box),W,H));
@@ -408,7 +405,6 @@ const InitApp = async function() {
   console.log("This is working");
 
   setupLegend();
-  //const dataPromise = loadData();
 
   const glCanvas = document.getElementById("xsection");
   const gl = glCanvas.getContext("webgl") || glCanvas.getContext("experimental-webgl");
@@ -424,10 +420,10 @@ const InitApp = async function() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.enable(gl.DEPTH_TEST);
-  gl.enable(gl.BLEND);
+  // gl.enable(gl.BLEND);
   gl.enable(gl.CULL_FACE);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.blendEquation(gl.FUNC_ADD);
+  // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  // gl.blendEquation(gl.FUNC_ADD);
 
   const vertexShader = gl.createShader(gl.VERTEX_SHADER);
   const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -504,15 +500,15 @@ const InitApp = async function() {
   let tiltUniformLocation = gl.getUniformLocation(program, 'tilt');
   let pointAUniformLocation = gl.getUniformLocation(program, 'pointA');
   let pointBUniformLocation = gl.getUniformLocation(program, 'pointB');
-  let depthOffsetUniformLocation = gl.getUniformLocation(program, 'depthOffset');
-  let depthScaleUniformLocation = gl.getUniformLocation(program, 'depthScale');
+  let sectionHalfThicknessUniformLocation = gl.getUniformLocation(program, 'sectionHalfThickness');
+  let canvasAspectUniformLocation = gl.getUniformLocation(program, 'canvasAspect');
   let zoomUniformLocation = gl.getUniformLocation(program, 'zoom');
   let scrollUniformLocation = gl.getUniformLocation(program, 'scroll');
   gl.uniform1f(tiltUniformLocation, state.tilt[0]);
   gl.uniform2fv(pointAUniformLocation, state.pointA);
   gl.uniform2fv(pointBUniformLocation, state.pointB);
-  gl.uniform1f(depthOffsetUniformLocation, state.depthOffset[0]);
-  gl.uniform1f(depthScaleUniformLocation, (data.limits[1][2]-data.limits[0][2])/111.1e3);
+  gl.uniform1f(sectionHalfThicknessUniformLocation, state.sectionHalfThickness[0]);
+  gl.uniform1f(canvasAspectUniformLocation, (new Float32Array([glCanvas.width/glCanvas.height]))[0]);
   gl.uniform1f(zoomUniformLocation, state.zoom[0]);
   gl.uniform2fv(scrollUniformLocation, state.scroll);
 
@@ -527,7 +523,7 @@ const InitApp = async function() {
     gl.uniform1f(tiltUniformLocation, state.tilt[0]);
     gl.uniform2fv(pointAUniformLocation, state.pointA);
     gl.uniform2fv(pointBUniformLocation, state.pointB);
-    gl.uniform1f(depthOffsetUniformLocation, state.depthOffset[0]);
+    gl.uniform1f(sectionHalfThicknessUniformLocation, state.sectionHalfThickness[0]);
     gl.uniform1f(zoomUniformLocation, state.zoom[0]);
     gl.uniform2fv(scrollUniformLocation, state.scroll);
 
@@ -535,7 +531,7 @@ const InitApp = async function() {
     const lonlatB = tools.xy2lonlat(state.pointB);
     AlabelSpan.textContent = `(${lonlatA[0].toFixed(2)}, ${lonlatA[1].toFixed(2)})`;
     BlabelSpan.textContent = `(${lonlatB[0].toFixed(2)}, ${lonlatB[1].toFixed(2)})`;
-    AspectLabelSpan.textContent = `${(111.0*state.depthOffset[0]*2).toFixed(2)}`;
+    AspectLabelSpan.textContent = `${(111.0*state.sectionHalfThickness[0]*2).toFixed(2)}`;
     PitchLabelSpan.textContent = `${(state.tilt[0]*180/Math.PI).toFixed(2)}`;
 
     updateXsectionOverlay();
@@ -621,13 +617,15 @@ const InitApp = async function() {
     switch (e.code) {
       case 'KeyZ':
         // Grow/shrink in small increments for narrow cross sections.
-        const dZ = ((e.key === 'Z') ? 1.0 : -1.0) * 0.1 * Math.log(state.depthOffset[0]+1.0-0.004);
-        state.depthOffset[0] = Math.max(state.depthOffset[0]+dZ,0.005);
+        const dZ = ((e.key === 'Z') ? 1.0 : -1.0) * 0.1 * Math.log(state.sectionHalfThickness[0]+1.0-0.004);
+        state.sectionHalfThickness[0] = Math.max(state.sectionHalfThickness[0]+dZ,0.005);
         break;
       case 'Space':
         state.zoom[0] = 1.0;
         state.scroll[0] = 0.0;
         state.scroll[1] = 0.0;
+        state.tilt[0] = 0.0;
+        break
       case 'ArrowLeft':
         if (e.shiftKey)
           tools.doTranslate([-tools.distance(state.pointA, state.pointB)*0.01, 0.0]);
