@@ -408,7 +408,7 @@ const InitApp = async function() {
   console.log("This is working");
 
   setupLegend();
-  const dataPromise = loadData();
+  //const dataPromise = loadData();
 
   const glCanvas = document.getElementById("xsection");
   const gl = glCanvas.getContext("webgl") || glCanvas.getContext("experimental-webgl");
@@ -468,7 +468,7 @@ const InitApp = async function() {
   //
   let triangleVertexBufferObject = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBufferObject);
-  await dataPromise;
+  //await dataPromise;
   //console.log(dv.getFloat32(0,true), dv.getFloat32(4,true), dv.getUint8(12), dv.getUint8(13));
   setupBackgroundMap();
   updateMapOverlay();
@@ -671,4 +671,7 @@ const InitApp = async function() {
   window.requestAnimationFrame(loop);
 };
 
-window.addEventListener('load',InitApp);
+window.addEventListener('load',() => {
+  console.log("Loading data...");
+  loadData().then(InitApp);
+});
