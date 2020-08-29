@@ -54,10 +54,10 @@ void main()
     // Upper unit should be smaller and in front of lower unit point.
     float pointOffset = 0.0;
     if (isUpperUnit > 0.5) {
-      gl_PointSize = 7.0;
+      gl_PointSize = 6.0;
     } else {
-      gl_PointSize = 3.0;
-      pointOffset = -0.001;
+      gl_PointSize = 2.0;
+      pointOffset = -0.00001;
     }
 
     // Scale & shift lateral dimensions
@@ -69,12 +69,12 @@ void main()
     X = vec3(X.x, (C*X.y-S*X.z), (S*X.y+C*X.z));
 
     // Zoom
-    X = X * vec3(1.0, zoom, zoom);
+    X = X * vec3(1.0, zoom, 0.0);
 
     // Vertical scroll
     X += vec3(scroll.x, scroll.y, 0.0);
 
-    gl_Position = vec4(2.0*X.x, 2.0*X.y, (X.z+pointOffset+1.0)/2.0/canvasAspect, 1.0);
+    gl_Position = vec4(2.0*X.x, 2.0*X.y, X.z*AB/canvasAspect/sectionHalfThickness/2.0+0.5+pointOffset, 1.0);
 
     float alpha = 1.0;
     if (unitIndex == 0.0) {
@@ -548,7 +548,7 @@ const InitApp = async function() {
     if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
       e.preventDefault();
       state.zoom[0] -= 0.15*e.deltaY/Math.abs(e.deltaY);
-      state.zoom[0] = Math.min(Math.max(0.1, state.zoom[0]),4.0);
+      state.zoom[0] = Math.min(Math.max(0.01, state.zoom[0]),10.0);
       window.requestAnimationFrame(loop);
     }
   });
