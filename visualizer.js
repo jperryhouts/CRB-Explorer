@@ -420,7 +420,7 @@ const InitApp = async function() {
 
   //gl.clearColor(0.75,0.85,0.8,1.0);
   //gl.clearColor(0.75,0.75,0.75,1.0);
-  gl.clearColor(0.0,0.0,0.0,0.0);
+  gl.clearColor(0.7,0.7,0.7,1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.enable(gl.DEPTH_TEST);
@@ -541,6 +541,7 @@ const InitApp = async function() {
     updateXsectionOverlay();
 
     //gl.clearColor(0.0,0.0,0.0,0.0);
+    gl.clearColor(0.7,0.7,0.7,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.drawArrays(gl.POINTS, 0/*offset*/, data.vertices.byteLength/data.elementSize/*vertex count*/);
   };
