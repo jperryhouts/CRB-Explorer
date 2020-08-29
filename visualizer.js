@@ -1,11 +1,11 @@
 "use strict";
 
-const unitNames = ['OLDER','IMNAHA','CRB','GRR1','GRN1','GRR2','GRN2','YOUNGER'];
+const unitNames = ['OLDER','IMNAHA','PICTURE GORGE','CRB','GRR1','GRN1','GRR2','GRN2','YOUNGER'];
 
 /* https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=8 */
 const colorPallet = [
-  //[183.0,231.0,255.0],
   [0,0,0],
+  [183.0,231.0,255.0],
   [109.0,199.0,255.0],
   [205.0,255.0,160.0],
   [136.0,245.0,129.0],
@@ -20,88 +20,109 @@ const normc2str = (c) => `${c[0]/255},${c[1]/255},${c[2]/255}`;
 const vertexShaderText = `
 precision mediump float;
 
-attribute vec3 vertPosition;
-attribute float lowerUnit;
-attribute float upperUnit;
+attribute vec3 vtxPosition;
+attribute float isUpperUnit;
+attribute float unitIndex;
 
 varying vec4 fragColor;
-varying vec3 loc;
+varying float visible;
 
 uniform float tilt;
 uniform vec2 pointA;
 uniform vec2 pointB;
 uniform float depthOffset;
+uniform float depthScale;
+uniform vec2 scroll;
+uniform float zoom;
 
 void main()
 {
-  if (upperUnit == 0.0) {
-    fragColor = vec4(${normc2str(colorPallet[0])}, 1.0);
-  } else if (upperUnit == 1.0) {
-    fragColor = vec4(${normc2str(colorPallet[1])}, 1.0);
-  } else if (upperUnit == 2.0) {
-    fragColor = vec4(${normc2str(colorPallet[2])}, 1.0);
-  } else if (upperUnit == 3.0) {
-    fragColor = vec4(${normc2str(colorPallet[3])}, 1.0);
-  } else if (upperUnit == 4.0) {
-    fragColor = vec4(${normc2str(colorPallet[4])}, 1.0);
-  } else if (upperUnit == 5.0) {
-    fragColor = vec4(${normc2str(colorPallet[5])}, 1.0);
-  } else if (upperUnit == 6.0) {
-    fragColor = vec4(${normc2str(colorPallet[6])}, 1.0);
-  } else if (upperUnit == 7.0) {
-    fragColor = vec4(${normc2str(colorPallet[7])}, 1.0);
-  } else {
-    fragColor = vec4(0.0, 0.0, 0.0, 1.0);
-  }
-
   vec2 B1 = vec2(pointB.x-pointA.x, pointB.y-pointA.y);
-  vec2 p = vec2(vertPosition.x-pointA.x, vertPosition.y-pointA.y);
+  vec2 p = vec2(vtxPosition.x-pointA.x, vtxPosition.y-pointA.y);
 
+  // Move to AB-axis perspective
   float Btheta = atan(B1.y,B1.x);
   float C = cos(-Btheta);
   float S = sin(-Btheta);
-  vec2 X = vec2(C*p.x-S*p.y, S*p.x+C*p.y);
-  float offset = 0.0;
+  vec3 X = vec3(C*p.x-S*p.y, (vtxPosition.z-0.5)*depthScale, S*p.x+C*p.y);
 
-  if (lowerUnit > 0.5) {
-    gl_PointSize = 3.0;
-    offset = depthOffset/20.0;
+  if (X.z*X.z > depthOffset*depthOffset) {
+    visible = 0.0;
   } else {
-    gl_PointSize = 5.0;
+    visible = 1.0;
+    float offset = 0.0;
+    if (isUpperUnit > 0.5) {
+      gl_PointSize = 7.0;
+    } else {
+      gl_PointSize = 3.0;
+      offset = 0.001;
+    }
+
+    C = cos(-tilt/2.0); S = sin(-tilt/2.0);
+    X = vec3(X.x, (C*X.y-S*X.z), (S*X.y+C*X.z));
+
+    // scale depth
+    vec3 dHat = vec3(0.0, cos(tilt/2.0), sin(tilt/2.0));
+    float Xd = X.y*dHat.y + X.z*dHat.z;
+    // scale y axis (now z axis from view perspective)
+    vec3 yHat = vec3(0.0, sin(tilt/2.0), cos(tilt/2.0));
+    float Xy = X.y*yHat.y + X.z*yHat.z;
+
+    float AB = sqrt(B1.x*B1.x + B1.y*B1.y); // lateral scaling
+    // scale x axis
+    X = vec3(X.x/AB-0.5, X.y, X.z);
+    // scale y and z axes
+    X = X - Xd*(1.0 - 1.0/depthScale)*dHat - Xy*(1.0 - 1.0/AB)*yHat;
+
+    // apply zoom
+    X = X * vec3(1.0, zoom, zoom);
+
+    gl_Position = vec4(2.0*(X.x+scroll.x), 2.0*(X.y+scroll.y), 2.0*X.z-offset, 1.0);
+
+    float alpha = 1.0;
+    if (unitIndex == 0.0) {
+      fragColor = vec4(${normc2str(colorPallet[0])}, alpha);
+    } else if (unitIndex == 1.0) {
+      fragColor = vec4(${normc2str(colorPallet[1])}, alpha);
+    } else if (unitIndex == 2.0) {
+      fragColor = vec4(${normc2str(colorPallet[2])}, alpha);
+    } else if (unitIndex == 3.0) {
+      fragColor = vec4(${normc2str(colorPallet[3])}, alpha);
+    } else if (unitIndex == 4.0) {
+      fragColor = vec4(${normc2str(colorPallet[4])}, alpha);
+    } else if (unitIndex == 5.0) {
+      fragColor = vec4(${normc2str(colorPallet[5])}, alpha);
+    } else if (unitIndex == 6.0) {
+      fragColor = vec4(${normc2str(colorPallet[6])}, alpha);
+    } else if (unitIndex == 7.0) {
+      fragColor = vec4(${normc2str(colorPallet[7])}, alpha);
+    }else if (unitIndex == 8.0) {
+      fragColor = vec4(${normc2str(colorPallet[8])}, alpha);
+    } else {
+      fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
   }
-
-  float AB = sqrt(B1.x*B1.x + B1.y*B1.y);
-  //float pitchAdjusted = (2.0*vertPosition.z-1.0 + X.y/depthOffset*sin(tilt));
-  float pitchAdjusted = (2.0*(vertPosition.z + X.y/AB*sin(tilt))-1.0);
-  gl_Position = vec4((X.x/AB)*2.0-1.0, pitchAdjusted, X.y-offset, 1.0);
-
-
-
-  loc = vec3(gl_Position.x,gl_Position.y,gl_Position.z/depthOffset);
 }`;
 
 const fragmentShaderText = `
 precision mediump float;
 
 varying vec4 fragColor;
-varying vec3 loc;
-
-//uniform sampler2D spriteTexture;
+varying float visible;
 
 void main()
 {
-  if (loc.z*loc.z > 1.0 || loc.x*loc.x > 1.0 || loc.y*loc.y > 1.0) {
-    discard;
-  } else {
-    //gl_FragColor = texture2D(spriteTexture,gl_PointCoord);
+  if (visible > 0.5) {
     gl_FragColor = fragColor;
+  } else {
+    discard;
   }
 }`;
 
 const data = {
   vertices: null,
   elementSize: 20,
-  limits: [[null,null],[null,null]]
+  limits: [[null,null,null],[null,null,null]],
 };
 
 const state = {
@@ -112,13 +133,19 @@ const state = {
   pointA: new Float32Array([0.828,0.506]),
   pointB: new Float32Array([0.919,0.432]),
   dragging: '',
-  dragstartptr: [0,0],
-  dragstartpoints: [0,0],
-  mapbounds: [[-124.5,43.5],[-115.5,48.5]] // must be the same as data.limits for now.
+  dragstartptr: [[0,0],[0,0]],
+  dragstartpoints: [[0,0],[0,0]],
+  dragstartscroll: [0.0,0.0],
+  dragstartruler: [[0,0],[0,0]],
+  mapbounds: [[-124.5,43.5],[-115.5,48.5]], // must be the same as data.limits for now.
+  zoom: new Float32Array([1.0]), // cross section zoom
+  scroll: new Float32Array([0.0,0.0]), // manually moved cross section plot.
+  ruler: [[0.98,0.25],[0.98,0.75]],
 };
 
 const tools = {
   add: function(a,b) { return a.map((v,i) => v+b[i]); },
+  sub: function(a,b) { return a.map((v,i) => v-b[i]); },
   distance: function(a,b) {
     return Math.sqrt(Math.pow(b[0]-a[0],2)+Math.pow(b[1]-a[1],2));
   },
@@ -140,6 +167,24 @@ const tools = {
     let Btheta = Math.atan2(B[1],B[0]);
     let C=Math.cos(Btheta), S=Math.sin(Btheta);
     return [C*x[0]-S*x[1], S*x[0]+C*x[1]];
+  },
+  doTranslate: function(dx) {
+    const move = tools.unproject(state.pointA, state.pointB, dx);
+    state.pointA[0] += move[0]; state.pointA[1] += move[1];
+    state.pointB[0] += move[0]; state.pointB[1] += move[1];
+  },
+  doRotate: function(dTheta) {
+    const axis = [(state.pointA[0]+state.pointB[0])/2,
+                  (state.pointA[1]+state.pointB[1])/2];
+    const A1 = tools.rotatePoint(state.pointA, axis, dTheta);
+    const B1 = tools.rotatePoint(state.pointB, axis, dTheta);
+    state.pointA[0] = A1[0]; state.pointA[1] = A1[1];
+    state.pointB[0] = B1[0]; state.pointB[1] = B1[1];
+  },
+  doTilt: function(dPhi) {
+    state.tilt[0] += dPhi*Math.PI/180;
+    state.tilt[0] = Math.min(state.tilt[0], Math.PI/2);
+    state.tilt[0] = Math.max(state.tilt[0], 0.0);
   },
   xy2canvas: function(pt, width, height) {
     // Input values in range (0,1)
@@ -164,46 +209,101 @@ const tools = {
 
 const startDrag = (e) => {
   e.preventDefault();
-  const rect = document.getElementById("map-overlay").getBoundingClientRect();
-  const pos = [(e.clientX - rect.left)/rect.width,
-            1-(e.clientY - rect.top)/rect.height];
-  const AX = tools.distance(pos,state.pointA);
-  const BX = tools.distance(pos,state.pointB);
+  const rect1 = document.getElementById("map-overlay").getBoundingClientRect();
+  const pos1 = [(e.clientX - rect1.left)/rect1.width,
+            1-(e.clientY - rect1.top)/rect1.height];
+  const rect2 = document.getElementById("xsection").getBoundingClientRect();
+  const pos2 = [(e.clientX - rect2.left)/rect2.width,
+              1-(e.clientY - rect2.top)/rect2.height];
+  const AX = tools.distance(pos1,state.pointA);
+  const BX = tools.distance(pos1,state.pointB);
   if (e.buttons === 1 && (AX < 0.05 || BX < 0.05)) {
     state.dragging = (AX < BX) ? "A" : "B";
-  } else if (Math.abs(tools.project(state.pointA, state.pointB, pos)[1]) < 0.05) {
+  } else if (Math.abs(tools.project(state.pointA, state.pointB, pos1)[1]) < 0.05) {
     state.dragging = "AB";
+  } else if (pos2[0]>0 && pos2[0]<1 && pos2[0]>0 && pos2[1]<1) {
+    if (e.buttons === 1) {
+      const R1 = tools.distance(pos2,state.ruler[0]);
+      const R2 = tools.distance(pos2,state.ruler[1]);
+      if (R1 < 0.05 || R2 < 0.05) {
+        state.dragging = (R1 < R2) ? 'ruler_1' : 'ruler_2';
+      }
+    } else if (e.buttons === 2) {
+      const R = Math.abs(tools.project(state.ruler[0], state.ruler[1], pos2)[1]);
+      if (R < 0.05) {
+        state.dragging = 'ruler_12';
+      }
+    } else if (e.buttons === 4) {
+      state.dragging = "scroll";
+    }
   } else {
     state.dragging = "";
   }
   if (state.dragging !== "") {
     state.dragstartpoints = [[state.pointA[0],state.pointA[1]],
                              [state.pointB[0],state.pointB[1]]];
-    state.dragstartptr = pos;
+    state.dragstartptr = [pos1, pos2];
+    state.dragstartruler = [[state.ruler[0][0],state.ruler[0][1]],
+                            [state.ruler[1][0],state.ruler[1][1]]];
+    state.dragstartscroll = [state.scroll[0],state.scroll[1]];
   }
 };
 
 const stopDrag = ((e) => state.dragging = "");
 
 const loadData = async function() {
-  return fetch('./points.json').then(r => r.json()).then(d=>{
-    data.limits = d.limits;
-
-    const points = d.points;
-    const buffer = new ArrayBuffer(data.elementSize*points.length/5);
-    const dv = new DataView(buffer);
-    // 4 bytes per floating point, 1 byte per uint8
-    // = 14 bytes total
-    for (let i=0; i<points.length/5; i++) {
-      dv.setFloat32(data.elementSize*i, points[5*i], true);
-      dv.setFloat32(data.elementSize*i+4, points[5*i+1], true);
-      dv.setFloat32(data.elementSize*i+8, points[5*i+2], true);
-      dv.setFloat32(data.elementSize*i+12, points[5*i+3], true);
-      dv.setFloat32(data.elementSize*i+16, points[5*i+4], true);
-    }
-    data.vertices = buffer;
-  });
+  const buffer = await fetch('./points.bin').then(resp => resp.arrayBuffer());
+  const dv = new DataView(buffer);
+  const endpos = buffer.byteLength-24;
+  const lim0 = [dv.getFloat32(endpos,true), dv.getFloat32(endpos+4,true), dv.getFloat32(endpos+8,true)];
+  const lim1 = [dv.getFloat32(endpos+12,true), dv.getFloat32(endpos+16,true), dv.getFloat32(endpos+20,true)];
+  data.limits = [new Float32Array(lim0), new Float32Array(lim1)];
+  data.vertices = buffer.slice(0,endpos);
 }
+
+const updateXsectionOverlay = function() {
+  const overlayCanvas = document.getElementById("xsection-overlay");
+  const ctx = overlayCanvas.getContext("2d");
+  const W=overlayCanvas.width, H=overlayCanvas.height;
+
+  // Draw ruler line
+  ctx.clearRect(0, 0, W, H); // clear canvas
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(0, 0, 0, 1.0)';
+  ctx.moveTo(...tools.xy2canvas(state.ruler[0],W,H));
+  ctx.lineTo(...tools.xy2canvas(state.ruler[1],W,H));
+  ctx.closePath();
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Draw ticks at ends of ruler line
+  const aspect = W/H;
+  const theta = Math.atan2((state.ruler[1][1]-state.ruler[0][1]),
+                             (state.ruler[1][0]-state.ruler[0][0])*aspect)+Math.PI/2;
+  const ortho1 = [0.01*Math.cos(theta),0.01*Math.sin(theta)*aspect];
+  const ortho2 = [-0.01*Math.cos(theta),-0.01*Math.sin(theta)*aspect];
+  ctx.beginPath();
+  ctx.moveTo(...tools.xy2canvas(state.ruler[0],W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.ruler[0],ortho1), W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.ruler[0],ortho2), W,H));
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(...tools.xy2canvas(state.ruler[1],W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.ruler[1],ortho1), W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.ruler[1],ortho2), W,H));
+  ctx.closePath();
+  ctx.stroke();
+
+  // Calculate ruler length
+  const limits = tools.sub(data.limits[1],data.limits[0]);
+  const AB = tools.distance(state.pointA,state.pointB);
+  const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(limits[0])*AB*111.1e3;
+  const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(limits[2])/state.zoom;
+  const RulerLabelSpan = document.getElementById('RulerLabel');
+  RulerLabelSpan.textContent = `${(Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2)}`;
+};
 
 const updateMapOverlay = function() {
   const mapCanvas = document.getElementById("map-overlay");
@@ -250,18 +350,13 @@ const updateMapOverlay = function() {
   ctx.stroke();
 }
 
-const setupBackgroundMap = async function() {
-  document.getElementById("map-div").oncontextmenu = (e) => startDrag(e);
-  updateMapOverlay();
-
+const setupLegend = function() {
   const swatches = document.getElementById('swatches');
-  //swatches.style.height = 24*colorPallet.length;
   for (let i=colorPallet.length-1; i>-1; i--) {
-
     const e = document.createElement('div');
     const f = document.createElement('div');
-    f.style.width = 24;
-    f.style.height = 24;
+    f.style.width = 15;
+    f.style.height = 15;
     f.style.backgroundColor = `rgb(${c2str(colorPallet[i])})`;
     f.style.display = 'inline-block';
     const g = document.createElement('span');
@@ -271,95 +366,49 @@ const setupBackgroundMap = async function() {
     e.appendChild(g);
     swatches.appendChild(e);
   }
+};
 
-  const mapCanvas = document.getElementById("map-background");
-  const ctx = mapCanvas.getContext("2d");
-  const W=mapCanvas.width, H=mapCanvas.height;
-  //ctx.globalCompositeOperation = 'destination-over';
-  ctx.clearRect(0, 0, W, H); // clear canvas
-  ctx.beginPath();
+const setupBackgroundMap = async function() {
+  const mapCanvasDiv = document.getElementById("map-background");
+  const W=mapCanvasDiv.getAttribute('width'),
+        H=mapCanvasDiv.getAttribute('height');
+
+  const layers = [];
+  for (let i=0; i<colorPallet.length; i++) {
+    const layer = document.createElement('canvas');
+    layer.setAttribute('width',W);
+    layer.setAttribute('height',H);
+    mapCanvasDiv.appendChild(layer);
+    const ctx = layer.getContext("2d");
+    ctx.clearRect(0,0,W,H);
+    layers.push(ctx);
+  }
+
   const dv = new DataView(data.vertices);
-  for (let j=0; j<colorPallet.length; j++) {
-    for (let i=0; i<data.vertices.byteLength/data.elementSize; i++) {
-      if (i%5==0) {
-        const lon = dv.getFloat32(data.elementSize*i+0,true);
-        const lat = dv.getFloat32(data.elementSize*i+4,true);
-        const lowerUnit = dv.getFloat32(data.elementSize*i+12,true);
-        const upperUnit = dv.getFloat32(data.elementSize*i+16,true);
-        if (upperUnit == j) {
-          const color = colorPallet[Math.round(upperUnit)];
-          //ctx.strokeStyle = `rgba(${255*upperUnit/7.0}, ${255*upperUnit/7.0}, 255, 1.0)`;
-          ctx.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1.0)`;
-          ctx.closePath();
-          ctx.beginPath();
-          ctx.arc(...tools.xy2canvas([lon,lat],W,H), 2, 0, 2 * Math.PI);
-          ctx.stroke();
-        }
-      }
-    }
+  for (let i=0; i<data.vertices.byteLength/data.elementSize; i+=5) {
+    const lon = dv.getFloat32(data.elementSize*i+0,true);
+    const lat = dv.getFloat32(data.elementSize*i+4,true);
+    const isUpperUnit = (dv.getFloat32(data.elementSize*i+12,true) > 0.5);
+    const unitIndex = Math.round(dv.getFloat32(data.elementSize*i+16,true));
+
+    const ctx = layers[unitIndex]
+    const color = colorPallet[unitIndex];
+    ctx.strokeStyle = `rgba(${c2str(color)}, 1.0)`;
+    ctx.beginPath();
+    if (isUpperUnit)
+      ctx.arc(...tools.xy2canvas([lon,lat],W,H), 2, 0, 2 * Math.PI);
+    else
+      ctx.arc(...tools.xy2canvas([lon,lat],W,H), 1, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.closePath();
   }
 }
 
-const handleKeyDown = function(e) {
-  let move;
-  switch (e.code) {
-    case 'KeyA':
-      state.depthOffset[0] *= (e.key === 'A') ? 1.02 : 0.98;
-      state.depthOffset[0] = Math.max(state.depthOffset[0],0.005);
-      break;
-    case 'ArrowLeft':
-      if (e.altKey) {
-        move = tools.unproject(state.pointA, state.pointB, [-tools.distance(state.pointA, state.pointB)*0.01, 0.0]);
-        state.pointA[0] += move[0]; state.pointA[1] += move[1];
-        state.pointB[0] += move[0]; state.pointB[1] += move[1];
-      } else {
-        let axis = [(state.pointA[0]+state.pointB[0])/2, (state.pointA[1]+state.pointB[1])/2];
-        const A1 = tools.rotatePoint(state.pointA, axis, 3.0);
-        const B1 = tools.rotatePoint(state.pointB, axis, 3.0);
-        state.pointA[0] = A1[0]; state.pointA[1] = A1[1];
-        state.pointB[0] = B1[0]; state.pointB[1] = B1[1];
-      }
-      break;
-    case 'ArrowRight':
-      if (e.altKey) {
-        move = tools.unproject(state.pointA, state.pointB, [tools.distance(state.pointA, state.pointB)*0.01, 0.0]);
-        state.pointA[0] += move[0]; state.pointA[1] += move[1];
-        state.pointB[0] += move[0]; state.pointB[1] += move[1];
-      } else {
-        let axis = [(state.pointA[0]+state.pointB[0])/2, (state.pointA[1]+state.pointB[1])/2];
-        const A1 = tools.rotatePoint(state.pointA, axis, -3.0);
-        const B1 = tools.rotatePoint(state.pointB, axis, -3.0);
-        state.pointA[0] = A1[0]; state.pointA[1] = A1[1];
-        state.pointB[0] = B1[0]; state.pointB[1] = B1[1];
-      }
-      break;
-    case 'ArrowUp':
-      if (e.ctrlKey) {
-        state.tilt[0] += 1*Math.PI/180;
-        state.tilt[0] = Math.min(state.tilt[0], Math.PI/2);
-      } else {
-        move = tools.unproject(state.pointA, state.pointB, [0.0, tools.distance(state.pointA, state.pointB)*0.01]);
-        state.pointA[0] += move[0]; state.pointA[1] += move[1];
-        state.pointB[0] += move[0]; state.pointB[1] += move[1];
-      }
-      break;
-    case 'ArrowDown':
-      if (e.ctrlKey) {
-        state.tilt[0] -= 1*Math.PI/180;
-        state.tilt[0] = Math.max(0.0,state.tilt[0]);
-      } else {
-        move = tools.unproject(state.pointA, state.pointB, [0.0, -tools.distance(state.pointA, state.pointB)*0.01]);
-        state.pointA[0] += move[0]; state.pointA[1] += move[1];
-        state.pointB[0] += move[0]; state.pointB[1] += move[1];
-      }
-      break;
-  }
-};
-
 const InitApp = async function() {
   console.log("This is working");
+
+  setupLegend();
   const dataPromise = loadData();
-  updateMapOverlay();
 
   const glCanvas = document.getElementById("xsection");
   const gl = glCanvas.getContext("webgl") || glCanvas.getContext("experimental-webgl");
@@ -422,9 +471,11 @@ const InitApp = async function() {
   await dataPromise;
   //console.log(dv.getFloat32(0,true), dv.getFloat32(4,true), dv.getUint8(12), dv.getUint8(13));
   setupBackgroundMap();
+  updateMapOverlay();
+  updateXsectionOverlay();
   gl.bufferData(gl.ARRAY_BUFFER, data.vertices, gl.STATIC_DRAW);
 
-  const positionAttribLocation = gl.getAttribLocation(program,'vertPosition');
+  const positionAttribLocation = gl.getAttribLocation(program,'vtxPosition');
   gl.vertexAttribPointer(positionAttribLocation, // locations
     3, // number of elements per attribute
     gl.FLOAT, // type of elements
@@ -434,11 +485,11 @@ const InitApp = async function() {
   );
   gl.enableVertexAttribArray(positionAttribLocation);
 
-  const unit1AttribLocation = gl.getAttribLocation(program,'lowerUnit');
+  const unit1AttribLocation = gl.getAttribLocation(program,'isUpperUnit');
   gl.vertexAttribPointer(unit1AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 12);
   gl.enableVertexAttribArray(unit1AttribLocation);
 
-  const unit2AttribLocation = gl.getAttribLocation(program,'upperUnit');
+  const unit2AttribLocation = gl.getAttribLocation(program,'unitIndex');
   gl.vertexAttribPointer(unit2AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 16);
   gl.enableVertexAttribArray(unit2AttribLocation);
 
@@ -454,15 +505,22 @@ const InitApp = async function() {
   let pointAUniformLocation = gl.getUniformLocation(program, 'pointA');
   let pointBUniformLocation = gl.getUniformLocation(program, 'pointB');
   let depthOffsetUniformLocation = gl.getUniformLocation(program, 'depthOffset');
+  let depthScaleUniformLocation = gl.getUniformLocation(program, 'depthScale');
+  let zoomUniformLocation = gl.getUniformLocation(program, 'zoom');
+  let scrollUniformLocation = gl.getUniformLocation(program, 'scroll');
   gl.uniform1f(tiltUniformLocation, state.tilt[0]);
   gl.uniform2fv(pointAUniformLocation, state.pointA);
   gl.uniform2fv(pointBUniformLocation, state.pointB);
   gl.uniform1f(depthOffsetUniformLocation, state.depthOffset[0]);
+  gl.uniform1f(depthScaleUniformLocation, (data.limits[1][2]-data.limits[0][2])/111.1e3);
+  gl.uniform1f(zoomUniformLocation, state.zoom[0]);
+  gl.uniform2fv(scrollUniformLocation, state.scroll);
 
   const AlabelSpan = document.getElementById('Alabel');
   const BlabelSpan = document.getElementById('Blabel');
   const AspectLabelSpan = document.getElementById('AspectLabel');
   const PitchLabelSpan = document.getElementById('PitchLabel');
+
 
   let s, c, degreesPerSecond=45, currentAngle=0;
   const loop = async function (currentTime) {
@@ -470,56 +528,144 @@ const InitApp = async function() {
     gl.uniform2fv(pointAUniformLocation, state.pointA);
     gl.uniform2fv(pointBUniformLocation, state.pointB);
     gl.uniform1f(depthOffsetUniformLocation, state.depthOffset[0]);
+    gl.uniform1f(zoomUniformLocation, state.zoom[0]);
+    gl.uniform2fv(scrollUniformLocation, state.scroll);
 
     const lonlatA = tools.xy2lonlat(state.pointA);
     const lonlatB = tools.xy2lonlat(state.pointB);
-    AlabelSpan.textContent = `A: (${lonlatA[0].toFixed(2)}, ${lonlatA[1].toFixed(2)})`;
-    BlabelSpan.textContent = `B: (${lonlatB[0].toFixed(2)}, ${lonlatB[1].toFixed(2)})`;
-    AspectLabelSpan.textContent = `Thickness: ${(111.0*state.depthOffset[0]*2).toFixed(2)} km`;
-    PitchLabelSpan.innerHTML = `Pitch: ${(state.tilt[0]*180/Math.PI).toFixed(2)} &#176;`;
+    AlabelSpan.textContent = `(${lonlatA[0].toFixed(2)}, ${lonlatA[1].toFixed(2)})`;
+    BlabelSpan.textContent = `(${lonlatB[0].toFixed(2)}, ${lonlatB[1].toFixed(2)})`;
+    AspectLabelSpan.textContent = `${(111.0*state.depthOffset[0]*2).toFixed(2)}`;
+    PitchLabelSpan.textContent = `${(state.tilt[0]*180/Math.PI).toFixed(2)}`;
+
+    updateXsectionOverlay();
 
     //gl.clearColor(0.0,0.0,0.0,0.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.drawArrays(gl.POINTS, 0/*offset*/, data.vertices.byteLength/data.elementSize/*vertex count*/);
   };
 
+  document.body.addEventListener('wheel', (e) => {
+    const rect = document.getElementById("xsection").getBoundingClientRect();
+    const pos = [(e.clientX - rect.left)/rect.width,
+               1-(e.clientY - rect.top)/rect.height];
+    if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
+      e.preventDefault();
+      state.zoom[0] -= e.deltaY*0.05;
+      state.zoom[0] = Math.min(Math.max(0.1, state.zoom[0]),4.0);
+      window.requestAnimationFrame(loop);
+    }
+  });
   document.body.addEventListener('mousedown', (e) => startDrag(e));
   document.body.addEventListener('mouseup', (e) => stopDrag(e));
   document.body.addEventListener('mousemove', (e) => {
     if (e.buttons > 0) {
-      const rect = document.getElementById("map-overlay").getBoundingClientRect();
-      const pos = [(e.clientX - rect.left)/rect.width,
-                1-(e.clientY - rect.top)/rect.height];
-      if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
-        const dx = [pos[0]-state.dragstartptr[0], pos[1]-state.dragstartptr[1]];
-        if (e.buttons === 1) { // left click drag
-          if (state.dragging === 'A') {
+      if (['scroll','ruler_1','ruler_2','ruler_12'].includes(state.dragging)) {
+        const rect = document.getElementById("xsection").getBoundingClientRect();
+        const pos = [(e.clientX - rect.left)/rect.width,
+                   1-(e.clientY - rect.top)/rect.height];
+
+        if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
+          const dx = [pos[0]-state.dragstartptr[1][0], pos[1]-state.dragstartptr[1][1]];
+          if (e.buttons === 4) {
+            if (state.dragging === 'scroll') {
+              //state.scroll[0] = state.dragstartscroll[0] + dx[0];
+              state.scroll[1] = state.dragstartscroll[1] + dx[1];
+              window.requestAnimationFrame(loop);
+            }
+          } else if (e.buttons === 2) {
+            if (state.dragging === 'ruler_12') {
+              state.ruler[0] = tools.add(state.dragstartruler[0],dx);
+              state.ruler[1] = tools.add(state.dragstartruler[1],dx);
+              window.requestAnimationFrame(updateXsectionOverlay);
+            }
+          } else if (e.buttons === 1) {
+            if (state.dragging === 'ruler_1') {
+              state.ruler[0] = tools.add(state.dragstartruler[0],dx);
+            } else if (state.dragging === 'ruler_2') {
+              state.ruler[1] = tools.add(state.dragstartruler[1],dx);
+            }
+            window.requestAnimationFrame(updateXsectionOverlay);
+          }
+        }
+        //window.requestAnimationFrame(updateMapOverlay);
+      } else if (state.dragging === 'A' || state.dragging === 'B' || state.dragging === 'AB') {
+        const  rect = document.getElementById("map-overlay").getBoundingClientRect();
+        const  pos = [(e.clientX - rect.left)/rect.width,
+                    1-(e.clientY - rect.top)/rect.height];
+        if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
+          const dx = [pos[0]-state.dragstartptr[0][0], pos[1]-state.dragstartptr[0][1]];
+          if (e.buttons === 1) { // left click drag
+            if (state.dragging === 'A') {
+              state.pointA[0] = state.dragstartpoints[0][0] + dx[0];
+              state.pointA[1] = state.dragstartpoints[0][1] + dx[1];
+            } else if (state.dragging === 'B') {
+              state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
+              state.pointB[1] = state.dragstartpoints[1][1] + dx[1];
+            }
+          } else if (e.buttons === 2 && state.dragging === 'AB') { // right click drag
             state.pointA[0] = state.dragstartpoints[0][0] + dx[0];
             state.pointA[1] = state.dragstartpoints[0][1] + dx[1];
-          } else if (state.dragging === 'B') {
             state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
             state.pointB[1] = state.dragstartpoints[1][1] + dx[1];
           }
-        } else if (e.buttons === 2 && state.dragging === 'AB') { // right click drag
-          state.pointA[0] = state.dragstartpoints[0][0] + dx[0];
-          state.pointA[1] = state.dragstartpoints[0][1] + dx[1];
-          state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
-          state.pointB[1] = state.dragstartpoints[1][1] + dx[1];
+          window.requestAnimationFrame(updateMapOverlay);
+          window.requestAnimationFrame(loop);
         }
-        window.requestAnimationFrame(updateMapOverlay);
-        window.requestAnimationFrame(loop);
       }
     }
   });
 
-  document.body.addEventListener('keydown', (e) => {
-    if (e.ctrlKey === false) {
-      e.preventDefault();
+  const handleKeyDown = function(e) {
+    switch (e.code) {
+      case 'KeyZ':
+        // Grow/shrink in small increments for narrow cross sections.
+        const dZ = ((e.key === 'Z') ? 1.0 : -1.0) * 0.1 * Math.log(state.depthOffset[0]+1.0-0.004);
+        state.depthOffset[0] = Math.max(state.depthOffset[0]+dZ,0.005);
+        break;
+      case 'Space':
+        state.zoom[0] = 1.0;
+        state.scroll[0] = 0.0;
+        state.scroll[1] = 0.0;
+      case 'ArrowLeft':
+        if (e.shiftKey)
+          tools.doTranslate([-tools.distance(state.pointA, state.pointB)*0.01, 0.0]);
+        else
+          tools.doRotate(3.0);
+        break;
+      case 'ArrowRight':
+        if (e.shiftKey)
+          tools.doTranslate([tools.distance(state.pointA, state.pointB)*0.01, 0.0]);
+        else
+          tools.doRotate(-3.0);
+        break;
+      case 'ArrowUp':
+        if (e.shiftKey)
+          tools.doTilt(4.0);
+        else
+          tools.doTranslate([0.0, tools.distance(state.pointA, state.pointB)*0.01]);
+        break;
+      case 'ArrowDown':
+        if (e.shiftKey)
+          tools.doTilt(-4.0);
+        else
+          tools.doTranslate([0.0, -tools.distance(state.pointA, state.pointB)*0.01]);
+        break;
     }
+  };
+
+  document.body.addEventListener('keydown', (e) => {
+    e.preventDefault();
     handleKeyDown(e);
+    window.requestAnimationFrame(updateXsectionOverlay);
     window.requestAnimationFrame(updateMapOverlay);
     window.requestAnimationFrame(loop);
   });
+
+  document.getElementById("map-div").oncontextmenu = (e) => startDrag(e);
+  document.getElementById("xsection").oncontextmenu = (e) => startDrag(e);
+  document.getElementById("xsection-div").oncontextmenu = (e) => startDrag(e);
+  document.getElementById("xsection-overlay").oncontextmenu = (e) => startDrag(e);
 
   window.requestAnimationFrame(loop);
 };
