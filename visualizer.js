@@ -670,5 +670,5 @@ const InitApp = async function() {
 
 window.addEventListener('load',() => {
   console.log("Loading data...");
-  loadData().then(InitApp);
+  loadData().then(InitApp, console.error);
 });
