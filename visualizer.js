@@ -547,7 +547,7 @@ const InitApp = async function() {
                1-(e.clientY - rect.top)/rect.height];
     if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
       e.preventDefault();
-      state.zoom[0] -= e.deltaY*0.05;
+      state.zoom[0] -= 0.15*e.deltaY/Math.abs(e.deltaY);
       state.zoom[0] = Math.min(Math.max(0.1, state.zoom[0]),4.0);
       window.requestAnimationFrame(loop);
     }
