@@ -270,7 +270,7 @@ const updateXsectionOverlay = function() {
   ctx.moveTo(...tools.xy2canvas(state.ruler[0],W,H));
   ctx.lineTo(...tools.xy2canvas(state.ruler[1],W,H));
   ctx.closePath();
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.0;
   ctx.stroke();
 
   // Draw ticks at ends of ruler line
@@ -324,7 +324,7 @@ const updateMapOverlay = function() {
   const midpoint = tools.add(state.pointA,state.pointB);
   midpoint[0] /= 2; midpoint[1] /= 2;
   ctx.moveTo(...tools.xy2canvas(tools.add(midpoint,minus_box),W,H));
-  ctx.moveTo(...tools.xy2canvas(tools.add(state.pointA,minus_box),W,H));
+  ctx.lineTo(...tools.xy2canvas(tools.add(state.pointA,minus_box),W,H));
   ctx.lineTo(...tools.xy2canvas(tools.add(state.pointA,plus_box), W,H));
   ctx.lineTo(...tools.xy2canvas(tools.add(state.pointB,plus_box), W,H));
   ctx.lineTo(...tools.xy2canvas(tools.add(state.pointB,minus_box),W,H));
@@ -352,8 +352,8 @@ const setupLegend = function() {
   for (let i=colorPallet.length-1; i>-1; i--) {
     const e = document.createElement('div');
     const f = document.createElement('div');
-    f.style.width = 15;
-    f.style.height = 15;
+    f.style.width = "15px";
+    f.style.height = "15px";
     f.style.backgroundColor = `rgb(${c2str(colorPallet[i])})`;
     f.style.display = 'inline-block';
     const g = document.createElement('span');
@@ -365,39 +365,40 @@ const setupLegend = function() {
   }
 };
 
-const setupBackgroundMap = async function() {
+const setupBackgroundMap = function() {
   const mapCanvasDiv = document.getElementById("map-background");
-  const W=mapCanvasDiv.getAttribute('width'),
-        H=mapCanvasDiv.getAttribute('height');
+  const W=mapCanvasDiv.clientWidth, H=mapCanvasDiv.clientHeight;
 
   const layers = [];
   for (let i=0; i<colorPallet.length; i++) {
     const layer = document.createElement('canvas');
-    layer.setAttribute('width',W);
-    layer.setAttribute('height',H);
+    layer.setAttribute('width',`${W}px`);
+    layer.setAttribute('height',`${H}px`);
     mapCanvasDiv.appendChild(layer);
     const ctx = layer.getContext("2d");
     ctx.clearRect(0,0,W,H);
     layers.push(ctx);
   }
 
-  const dv = new DataView(data.vertices);
-  for (let i=0; i<data.vertices.byteLength/data.elementSize; i+=5) {
-    const lon = dv.getFloat32(data.elementSize*i+0,true);
-    const lat = dv.getFloat32(data.elementSize*i+4,true);
-    const isUpperUnit = (dv.getFloat32(data.elementSize*i+12,true) > 0.5);
-    const unitIndex = Math.round(dv.getFloat32(data.elementSize*i+16,true));
-
-    const ctx = layers[unitIndex]
+  const placeDot = async function(x,y,isUpperUnit,unitIndex) {
+    const ctx = layers[unitIndex];
     const color = colorPallet[unitIndex];
+    const dotRadius = (isUpperUnit) ? 2.0 : 1.0;
     ctx.strokeStyle = `rgba(${c2str(color)}, 1.0)`;
     ctx.beginPath();
-    if (isUpperUnit)
-      ctx.arc(...tools.xy2canvas([lon,lat],W,H), 2, 0, 2 * Math.PI);
-    else
-      ctx.arc(...tools.xy2canvas([lon,lat],W,H), 1, 0, 2 * Math.PI);
+    ctx.arc(...tools.xy2canvas([x,y],W,H), dotRadius, 0.0, 2 * Math.PI);
     ctx.stroke();
     ctx.closePath();
+  };
+
+  // Do this with lots of async function calls to minimize perceived speed.
+  const dv = new DataView(data.vertices);
+  for (let i=0; i<data.vertices.byteLength/data.elementSize; i+=5) {
+    const x = dv.getFloat32(data.elementSize*i+0,true);
+    const y = dv.getFloat32(data.elementSize*i+4,true);
+    const isUpperUnit = (dv.getFloat32(data.elementSize*i+12,true) > 0.5);
+    const unitIndex = Math.round(dv.getFloat32(data.elementSize*i+16,true));
+    placeDot(x,y,isUpperUnit,unitIndex);
   }
 }
 
@@ -405,6 +406,9 @@ const InitApp = async function() {
   console.log("This is working");
 
   setupLegend();
+  setupBackgroundMap();
+  updateMapOverlay();
+  updateXsectionOverlay();
 
   const glCanvas = document.getElementById("xsection");
   const gl = glCanvas.getContext("webgl") || glCanvas.getContext("experimental-webgl");
@@ -464,11 +468,6 @@ const InitApp = async function() {
   //
   let triangleVertexBufferObject = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBufferObject);
-  //await dataPromise;
-  //console.log(dv.getFloat32(0,true), dv.getFloat32(4,true), dv.getUint8(12), dv.getUint8(13));
-  setupBackgroundMap();
-  updateMapOverlay();
-  updateXsectionOverlay();
   gl.bufferData(gl.ARRAY_BUFFER, data.vertices, gl.STATIC_DRAW);
 
   const positionAttribLocation = gl.getAttribLocation(program,'vtxPosition');
