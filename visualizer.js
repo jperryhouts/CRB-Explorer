@@ -405,7 +405,6 @@ const setupBackgroundMap = function() {
 const InitApp = async function() {
   console.log("This is working");
 
-  setupLegend();
   setupBackgroundMap();
   updateMapOverlay();
   updateXsectionOverlay();
@@ -669,6 +668,7 @@ const InitApp = async function() {
 };
 
 window.addEventListener('load',() => {
+  setupLegend();
   console.log("Loading data...");
   loadData().then(InitApp, console.error);
 });
