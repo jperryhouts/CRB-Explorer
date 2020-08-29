@@ -670,3 +670,5 @@ const InitApp = async function() {
 
   window.requestAnimationFrame(loop);
 };
+
+window.addEventListener('load',InitApp);
