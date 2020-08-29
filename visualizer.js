@@ -74,7 +74,7 @@ void main()
     // Vertical scroll
     X += vec3(scroll.x, scroll.y, 0.0);
 
-    gl_Position = vec4(2.0*X.x, 2.0*X.y, 2.0*X.z+pointOffset, 1.0);
+    gl_Position = vec4(2.0*X.x, 2.0*X.y, (X.z+pointOffset+1.0)/2.0/canvasAspect, 1.0);
 
     float alpha = 1.0;
     if (unitIndex == 0.0) {
