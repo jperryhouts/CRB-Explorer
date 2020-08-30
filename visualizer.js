@@ -533,7 +533,7 @@ const InitApp = async function() {
 
     const x1 = tools.sub(tools.xy2lonlat([2*state.sectionHalfThickness[0],0]),
                          tools.xy2lonlat([0,0]));
-    AspectLabelSpan.textContent = `${(111.0*x1[0]).toFixed(2)}`;
+    AspectLabelSpan.textContent = `${(111.1*x1[0]).toFixed(2)}`;
     PitchLabelSpan.textContent = `${(state.tilt[0]*180/Math.PI).toFixed(2)}`;
 
     updateXsectionOverlay();
