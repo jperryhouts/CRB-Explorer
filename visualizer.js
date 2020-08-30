@@ -126,10 +126,8 @@ const data = {
 };
 
 const state = {
-  sectionHalfThickness: new Float32Array([0.012]),
   tilt: new Float32Array([0.0]),
-  // pointA: new Float32Array([0.82,0.4]),
-  // pointB: new Float32Array([0.86,0.52]),
+  sectionHalfThickness: new Float32Array([0.012]),
   pointA: new Float32Array([0.828,0.506]),
   pointB: new Float32Array([0.919,0.432]),
   dragging: '',
@@ -297,10 +295,10 @@ const updateXsectionOverlay = function() {
   ctx.stroke();
 
   // Calculate ruler length
-  const limits = tools.sub(data.limits[1],data.limits[0]);
+  const lim = tools.sub(data.limits[1],data.limits[0]);
   const AB = tools.distance(state.pointA,state.pointB);
-  const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(limits[0])*AB*111.1e3;
-  const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(limits[2])/state.zoom;
+  const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(lim[0])*AB*111.1e3;
+  const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(lim[2])/state.zoom;
   const RulerLabelSpan = document.getElementById('RulerLabel');
   RulerLabelSpan.textContent = `${(Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2)}`;
 };
@@ -532,7 +530,10 @@ const InitApp = async function() {
     const lonlatB = tools.xy2lonlat(state.pointB);
     AlabelSpan.textContent = `(${lonlatA[0].toFixed(2)}, ${lonlatA[1].toFixed(2)})`;
     BlabelSpan.textContent = `(${lonlatB[0].toFixed(2)}, ${lonlatB[1].toFixed(2)})`;
-    AspectLabelSpan.textContent = `${(111.0*state.sectionHalfThickness[0]*2).toFixed(2)}`;
+
+    const x1 = tools.sub(tools.xy2lonlat([2*state.sectionHalfThickness[0],0]),
+                         tools.xy2lonlat([0,0]));
+    AspectLabelSpan.textContent = `${(111.0*x1[0]).toFixed(2)}`;
     PitchLabelSpan.textContent = `${(state.tilt[0]*180/Math.PI).toFixed(2)}`;
 
     updateXsectionOverlay();
