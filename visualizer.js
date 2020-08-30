@@ -220,7 +220,7 @@ const startDrag = (e) => {
     state.dragging = (AX < BX) ? "A" : "B";
   } else if (Math.abs(tools.project(state.pointA, state.pointB, pos1)[1]) < 0.05) {
     state.dragging = "AB";
-  } else if (pos2[0]>0 && pos2[0]<1 && pos2[0]>0 && pos2[1]<1) {
+  } else if (pos2[0]>0 && pos2[0]<1 && pos2[1]>0 && pos2[1]<1) {
     if (e.buttons === 1) {
       const R1 = tools.distance(pos2,state.ruler[0]);
       const R2 = tools.distance(pos2,state.ruler[1]);
