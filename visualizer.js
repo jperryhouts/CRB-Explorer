@@ -57,7 +57,7 @@ void main()
       gl_PointSize = 6.0;
     } else {
       gl_PointSize = 2.0;
-      pointOffset = -0.00001;
+      pointOffset = 2e-9; // Mediump float precision
     }
 
     // Scale & shift lateral dimensions
@@ -68,33 +68,35 @@ void main()
     C = cos(-tilt); S = sin(-tilt);
     X = vec3(X.x, (C*X.y-S*X.z), (S*X.y+C*X.z));
 
+    // Scale scene depth
+    X *= vec3(1.0, 1.0, AB/canvasAspect/sectionHalfThickness/2.0);
+
     // Zoom
-    X = X * vec3(1.0, zoom, 0.0);
+    X *= vec3(1.0, zoom, 1.0);
 
     // Vertical scroll
     X += vec3(scroll.x, scroll.y, 0.0);
 
-    gl_Position = vec4(2.0*X.x, 2.0*X.y, X.z*AB/canvasAspect/sectionHalfThickness/2.0+0.5+pointOffset, 1.0);
+    gl_Position = vec4(2.0*X.x, 2.0*X.y, (0.5+X.z)-pointOffset, 1.0);
 
-    float alpha = 1.0;
     if (unitIndex == 0.0) {
-      fragColor = vec4(${normc2str(colorPallet[0])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[0])}, 1.0);
     } else if (unitIndex == 1.0) {
-      fragColor = vec4(${normc2str(colorPallet[1])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[1])}, 1.0);
     } else if (unitIndex == 2.0) {
-      fragColor = vec4(${normc2str(colorPallet[2])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[2])}, 1.0);
     } else if (unitIndex == 3.0) {
-      fragColor = vec4(${normc2str(colorPallet[3])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[3])}, 1.0);
     } else if (unitIndex == 4.0) {
-      fragColor = vec4(${normc2str(colorPallet[4])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[4])}, 1.0);
     } else if (unitIndex == 5.0) {
-      fragColor = vec4(${normc2str(colorPallet[5])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[5])}, 1.0);
     } else if (unitIndex == 6.0) {
-      fragColor = vec4(${normc2str(colorPallet[6])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[6])}, 1.0);
     } else if (unitIndex == 7.0) {
-      fragColor = vec4(${normc2str(colorPallet[7])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[7])}, 1.0);
     }else if (unitIndex == 8.0) {
-      fragColor = vec4(${normc2str(colorPallet[8])}, alpha);
+      fragColor = vec4(${normc2str(colorPallet[8])}, 1.0);
     } else {
       fragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
@@ -583,7 +585,6 @@ const InitApp = async function() {
             window.requestAnimationFrame(updateXsectionOverlay);
           }
         }
-        //window.requestAnimationFrame(updateMapOverlay);
       } else if (state.dragging === 'A' || state.dragging === 'B' || state.dragging === 'AB') {
         const  rect = document.getElementById("map-overlay").getBoundingClientRect();
         const  pos = [(e.clientX - rect.left)/rect.width,
