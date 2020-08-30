@@ -295,10 +295,10 @@ const updateXsectionOverlay = function() {
   ctx.stroke();
 
   // Calculate ruler length
-  const lim = tools.sub(data.limits[1],data.limits[0]);
+  const extent = tools.sub(data.limits[1],data.limits[0]);
   const AB = tools.distance(state.pointA,state.pointB);
-  const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(lim[0])*AB*111.1e3;
-  const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(lim[2])/state.zoom;
+  const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(extent[0])*AB*111.1e3;
+  const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(extent[2])/state.zoom;
   const RulerLabelSpan = document.getElementById('RulerLabel');
   RulerLabelSpan.textContent = `${(Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2)}`;
 };
@@ -418,16 +418,11 @@ const InitApp = async function() {
     return;
   }
 
-  //gl.clearColor(0.75,0.85,0.8,1.0);
-  //gl.clearColor(0.75,0.75,0.75,1.0);
   gl.clearColor(0.7,0.7,0.7,1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.enable(gl.DEPTH_TEST);
-  // gl.enable(gl.BLEND);
   gl.enable(gl.CULL_FACE);
-  // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  // gl.blendEquation(gl.FUNC_ADD);
 
   const vertexShader = gl.createShader(gl.VERTEX_SHADER);
   const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -488,12 +483,6 @@ const InitApp = async function() {
   gl.vertexAttribPointer(unit2AttribLocation, 1, gl.FLOAT, gl.FALSE, data.elementSize, 16);
   gl.enableVertexAttribArray(unit2AttribLocation);
 
-  // const icon = document.getElementById('icon');
-  // const glTexture = gl.createTexture(gl.TEXTURE0);
-  // gl.bindTexture(gl.TEXTURE_2D, glTexture);
-  // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, icon);
-  // gl.generateMipmap(gl.TEXTURE_2D);
-
   gl.useProgram(program);
 
   let tiltUniformLocation = gl.getUniformLocation(program, 'tilt');
@@ -513,7 +502,7 @@ const InitApp = async function() {
 
   const AlabelSpan = document.getElementById('Alabel');
   const BlabelSpan = document.getElementById('Blabel');
-  const AspectLabelSpan = document.getElementById('AspectLabel');
+  const ThicknessLabelSpan = document.getElementById('ThicknessLabel');
   const PitchLabelSpan = document.getElementById('PitchLabel');
 
 
@@ -533,12 +522,11 @@ const InitApp = async function() {
 
     const x1 = tools.sub(tools.xy2lonlat([2*state.sectionHalfThickness[0],0]),
                          tools.xy2lonlat([0,0]));
-    AspectLabelSpan.textContent = `${(111.1*x1[0]).toFixed(2)}`;
+    ThicknessLabelSpan.textContent = `${(111.1*x1[0]).toFixed(2)}`;
     PitchLabelSpan.textContent = `${(state.tilt[0]*180/Math.PI).toFixed(2)}`;
 
     updateXsectionOverlay();
 
-    //gl.clearColor(0.0,0.0,0.0,0.0);
     gl.clearColor(0.7,0.7,0.7,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.drawArrays(gl.POINTS, 0/*offset*/, data.vertices.byteLength/data.elementSize/*vertex count*/);
@@ -656,6 +644,8 @@ const InitApp = async function() {
   document.body.addEventListener('keydown', (e) => {
     e.preventDefault();
     handleKeyDown(e);
+    const RulerInfoSpan = document.getElementById('ruler-info');
+    RulerInfoSpan.style.textDecoration = (state.tilt > 0.0) ? 'line-through' : 'none';
     window.requestAnimationFrame(()=>{
       updateXsectionOverlay(); updateMapOverlay(); loop(); });
   });
