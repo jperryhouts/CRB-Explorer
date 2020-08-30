@@ -71,6 +71,9 @@ void main()
 
     // Scale scene depth
     X *= vec3(1.0, 1.0, AB/canvasAspect/sectionHalfThickness/2.0);
+    // Just to be safe, let's squish things down even more in depth.
+    // This prevents clipping deep strata when they are tilted around x-axis
+    X /= vec3(1.0, 1.0, 10.0);
 
     // Zoom
     X *= vec3(1.0, zoom, 1.0);
@@ -78,7 +81,7 @@ void main()
     // Vertical scroll
     X += vec3(scroll.x, scroll.y, 0.0);
 
-    gl_Position = vec4(2.0*X.x, 2.0*X.y, (0.5+X.z)-pointOffset, 1.0);
+    gl_Position = vec4(2.0*X.x, 2.0*X.y, X.z-pointOffset, 1.0);
 
     if (unitIndex == 0.0) {
       fragColor = vec4(${normc2str(colorPallet[0])}, 1.0);
@@ -300,7 +303,7 @@ const updateXsectionOverlay = function() {
   const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(extent[0])*AB*111.1e3;
   const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(extent[2])/state.zoom;
   const RulerLabelSpan = document.getElementById('RulerLabel');
-  RulerLabelSpan.textContent = `${(Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2)}`;
+  RulerLabelSpan.textContent = (Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2);
 };
 
 const updateMapOverlay = function() {
@@ -502,9 +505,9 @@ const InitApp = async function() {
 
   const AlabelSpan = document.getElementById('Alabel');
   const BlabelSpan = document.getElementById('Blabel');
+  const ABLengthLabelSpan = document.getElementById('ABLengthLabel');
   const ThicknessLabelSpan = document.getElementById('ThicknessLabel');
   const PitchLabelSpan = document.getElementById('PitchLabel');
-
 
   let s, c, degreesPerSecond=45, currentAngle=0;
   const loop = async function (currentTime) {
@@ -519,11 +522,12 @@ const InitApp = async function() {
     const lonlatB = tools.xy2lonlat(state.pointB);
     AlabelSpan.textContent = `(${lonlatA[0].toFixed(2)}, ${lonlatA[1].toFixed(2)})`;
     BlabelSpan.textContent = `(${lonlatB[0].toFixed(2)}, ${lonlatB[1].toFixed(2)})`;
+    ABLengthLabelSpan.textContent = (111.1*tools.distance(lonlatA,lonlatB)).toFixed(2);
 
     const x1 = tools.sub(tools.xy2lonlat([2*state.sectionHalfThickness[0],0]),
                          tools.xy2lonlat([0,0]));
-    ThicknessLabelSpan.textContent = `${(111.1*x1[0]).toFixed(2)}`;
-    PitchLabelSpan.textContent = `${(state.tilt[0]*180/Math.PI).toFixed(2)}`;
+    ThicknessLabelSpan.textContent = (111.1*x1[0]).toFixed(2);
+    PitchLabelSpan.textContent = (state.tilt[0]*180/Math.PI).toFixed(2);
 
     updateXsectionOverlay();
 
