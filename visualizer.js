@@ -604,8 +604,7 @@ const InitApp = async function() {
             state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
             state.pointB[1] = state.dragstartpoints[1][1] + dx[1];
           }
-          window.requestAnimationFrame(updateMapOverlay);
-          window.requestAnimationFrame(loop);
+          window.requestAnimationFrame(()=>{ updateMapOverlay(); loop(); });
         }
       }
     }
@@ -654,9 +653,8 @@ const InitApp = async function() {
   document.body.addEventListener('keydown', (e) => {
     e.preventDefault();
     handleKeyDown(e);
-    window.requestAnimationFrame(updateXsectionOverlay);
-    window.requestAnimationFrame(updateMapOverlay);
-    window.requestAnimationFrame(loop);
+    window.requestAnimationFrame(()=>{
+      updateXsectionOverlay(); updateMapOverlay(); loop(); });
   });
 
   document.getElementById("map-div").oncontextmenu = (e) => startDrag(e);
