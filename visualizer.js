@@ -147,14 +147,56 @@ const state = {
 const tools = {
   add: function(a,b) { return a.map((v,i) => v+b[i]); },
   sub: function(a,b) { return a.map((v,i) => v-b[i]); },
+  dot: function(a,b) { return a[0]*b[0] + a[1]*b[1] + (a[2]|0)*(b[2]|0); },
   distance: function(a,b) {
     return Math.sqrt(Math.pow(b[0]-a[0],2)+Math.pow(b[1]-a[1],2));
+  },
+  mapDistanceDegrees: function(x,y) {
+    const lonx = x[0]*Math.PI/180, latx = x[1]*Math.PI/180;
+    const lony = y[0]*Math.PI/180, laty = y[1]*Math.PI/180;
+    const a = Math.acos(Math.sin(latx)*Math.sin(laty) +
+                        Math.cos(latx)*Math.cos(laty)*Math.cos(lony-lonx));
+    return a*180/Math.PI;
+  },
+  mapDistanceMeters: function(x,y) {
+    return 6378e3*tools.mapDistanceDegrees(x,y)*Math.PI/180;
+  },
+  lonlat2xyz: function(lonlat) {
+    const r = 6378e3, theta = lonlat[0]*Math.PI/180, phi = lonlat[1]*Math.PI/180;
+    const x = r*Math.cos(theta)*Math.cos(phi);
+    const y = r*Math.sin(theta)*Math.cos(phi);
+    const z = r*Math.sin(phi);
+    return [x,y,z];
+  },
+  xyz2lonlat: function(x,y,z) {
+    const r = Math.sqrt(x*x+y*y+z*z);
+    const phi = Math.asin(z/r);
+    const theta = Math.atan(y/x);
+    return [theta*180/Math.PI, phi*180/Math.PI];
   },
   rotatePoint: function(pt, axis, dtheta) {
     const R = tools.distance(pt,axis);
     const theta0 = Math.atan2(pt[1]-axis[1],pt[0]-axis[0]);
     const theta1 = theta0+dtheta*Math.PI/180;
     return tools.add(axis,[R*Math.cos(theta1),R*Math.sin(theta1)]);
+  },
+  mapRotatePoint: function(x, axis, dTheta) {
+    // Not implemented
+    throw 'Not implemented';
+  },
+  mapMidpoint: function(x,y) {
+    const lonx = x[0]*Math.PI/180, latx = x[1]*Math.PI/180;
+    const lony = y[0]*Math.PI/180, laty = y[1]*Math.PI/180;
+
+    const A = lony-lonx, b = Math.PI/2-latx, c = Math.PI/2-laty;
+    const a = Math.acos(Math.cos(b)*Math.cos(c) + Math.sin(b)*Math.sin(c)*Math.cos(A));
+    const C = Math.asin(Math.sin(c)*Math.sin(A)/Math.sin(a));
+
+    const a1 = a/2;
+    const c1 = Math.acos(Math.cos(b)*Math.cos(a1) + Math.sin(b)*Math.sin(a1)*Math.cos(C));
+
+    const a1lon = lonx+A/2, a1lat = Math.PI/2-c1;
+    return [a1lon*180/Math.PI, a1lat*180/Math.PI];
   },
   project: function(a,b,x) {
     const B = [b[0]-a[0], b[1]-a[1]];
@@ -299,8 +341,8 @@ const updateXsectionOverlay = function() {
 
   // Calculate ruler length
   const extent = tools.sub(data.limits[1],data.limits[0]);
-  const AB = tools.distance(state.pointA,state.pointB);
-  const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(extent[0])*AB*111.1e3;
+  const AB = tools.mapDistanceMeters(state.pointA,state.pointB);
+  const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(extent[0])*AB;
   const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(extent[2])/state.zoom;
   const RulerLabelSpan = document.getElementById('RulerLabel');
   RulerLabelSpan.textContent = (Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2);
@@ -522,7 +564,7 @@ const InitApp = async function() {
     const lonlatB = tools.xy2lonlat(state.pointB);
     AlabelSpan.textContent = `(${lonlatA[0].toFixed(2)}, ${lonlatA[1].toFixed(2)})`;
     BlabelSpan.textContent = `(${lonlatB[0].toFixed(2)}, ${lonlatB[1].toFixed(2)})`;
-    ABLengthLabelSpan.textContent = (111.1*tools.distance(lonlatA,lonlatB)).toFixed(2);
+    ABLengthLabelSpan.textContent = (tools.mapDistanceMeters(lonlatA,lonlatB)/1e3).toFixed(2);
 
     const x1 = tools.sub(tools.xy2lonlat([2*state.sectionHalfThickness[0],0]),
                          tools.xy2lonlat([0,0]));
