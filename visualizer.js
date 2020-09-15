@@ -124,7 +124,7 @@ void main()
     }else if (unitIndex == 12.0) {
       fragColor = vec4(${normc2str(colorPallet[12])}, 1.0);
     }else if (unitIndex == 13.0) {
-      fragColor = vec4(${normc2str(colorPallet[13])}, 1.0);
+      fragColor = vec4(${normc2str(colorPallet[13])}, 0.0);
     } else {
       fragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
@@ -139,7 +139,7 @@ varying float isVisible;
 
 void main()
 {
-  if (isVisible > 0.5) {
+  if (isVisible > 0.5 && fragColor[3] > 0.0) {
     gl_FragColor = fragColor;
   } else {
     discard;
