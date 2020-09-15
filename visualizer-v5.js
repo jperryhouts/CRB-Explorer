@@ -419,7 +419,7 @@ const updateMapOverlay = function() {
 
 const setupLegend = function() {
   const swatches = document.getElementById('swatches');
-  for (let i=colorPallet.length-1; i>-1; i--) {
+  for (let i=colorPallet.length-2; i>-1; i--) {
     const e = document.createElement('div');
     const f = document.createElement('div');
     f.style.width = "15px";
@@ -440,7 +440,7 @@ const setupBackgroundMap = function() {
   const W=mapCanvasDiv.clientWidth, H=mapCanvasDiv.clientHeight;
 
   const layers = [];
-  for (let i=0; i<colorPallet.length; i++) {
+  for (let i=0; i<colorPallet.length-1; i++) {
     const layer = document.createElement('canvas');
     layer.setAttribute('width',`${W}px`);
     layer.setAttribute('height',`${H}px`);
@@ -468,7 +468,9 @@ const setupBackgroundMap = function() {
     const y = dv.getFloat32(data.elementSize*i+4,true);
     const isUpperUnit = (dv.getFloat32(data.elementSize*i+12,true) > 0.5);
     const unitIndex = Math.round(dv.getFloat32(data.elementSize*i+16,true));
-    placeDot(x,y,isUpperUnit,unitIndex);
+    if (unitIndex < colorPallet.length-2) {
+      placeDot(x,y,isUpperUnit,unitIndex);
+    }
   }
 }
 
