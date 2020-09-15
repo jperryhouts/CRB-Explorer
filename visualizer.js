@@ -676,7 +676,7 @@ const InitApp = async function() {
       case 'KeyZ':
         // Grow/shrink in small increments for narrow cross sections.
         const dZ = ((e.key === 'Z') ? 1.0 : -1.0) * 0.1 * Math.log(state.sectionHalfThickness[0]+1.0-0.004);
-        state.sectionHalfThickness[0] = Math.max(state.sectionHalfThickness[0]+dZ,0.005);
+        state.sectionHalfThickness[0] = Math.max(state.sectionHalfThickness[0]+dZ,0.0001);
         break;
       case 'Space':
         state.zoom[0] = 1.0;
