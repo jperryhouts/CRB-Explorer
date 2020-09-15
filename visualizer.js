@@ -1,18 +1,32 @@
 "use strict";
 
-const unitNames = ['OLDER','IMNAHA','PICTURE GORGE','CRB','GRR1','GRN1','GRR2','GRN2','YOUNGER'];
+const unitNames = ['OLDER','IMNAHA','PICTURE GORGE','CRB','GRR1','GRN1','GRR2','GRN2',
+    'WANAPUM','LWR. WANAPUM','UPR. WANAPUM',
+    'LWR. Saddle MTN','UPR. Saddle MTN',
+    'YOUNGER'];
 
 /* https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=8 */
 const colorPallet = [
-  [0,0,0],
-  [109.0,199.0,255.0],
-  [183.0,231.0,255.0],
-  [205.0,255.0,160.0],
-  [136.0,245.0,129.0],
-  [255.0,164.0,163.0],
-  [255.0,72.0,74.0],
-  [255.0,168.0,47.0],
-  [255.0,219.0,130.0]
+  [0,0,0], // Older
+    [182,137,230], // Imnaha
+    [226,198,241], // PG
+
+  [110,177,211], // CRB (undifferentiated)
+  [109.0,199.0,255.0], // GRR1
+  [183.0,231.0,255.0], // GRN1
+  [205.0,255.0,160.0], // GRR2
+  [136.0,245.0,129.0], // GRN2
+  //[255.0,164.0,163.0], // GRN2
+
+  [255.0,72.0,74.0], // Wanapum lower
+  [255.0,99.0,100.0], // Wanapum
+  [255.0,140.0,120.0], // Wanapum upper
+
+  [255.0,168.0,47.0], // Saddle mtn lower
+  [255.0,199.0,83.0], // Saddle mtn upper
+
+  //[255.0,219.0,130.0] // younger
+    [255,237,130] // YOUNGER
 ];
 
 const c2str = (c) => `${c[0]},${c[1]},${c[2]}`;
@@ -101,6 +115,16 @@ void main()
       fragColor = vec4(${normc2str(colorPallet[7])}, 1.0);
     }else if (unitIndex == 8.0) {
       fragColor = vec4(${normc2str(colorPallet[8])}, 1.0);
+    }else if (unitIndex == 9.0) {
+      fragColor = vec4(${normc2str(colorPallet[9])}, 1.0);
+    }else if (unitIndex == 10.0) {
+      fragColor = vec4(${normc2str(colorPallet[10])}, 1.0);
+    }else if (unitIndex == 11.0) {
+      fragColor = vec4(${normc2str(colorPallet[11])}, 1.0);
+    }else if (unitIndex == 12.0) {
+      fragColor = vec4(${normc2str(colorPallet[12])}, 1.0);
+    }else if (unitIndex == 13.0) {
+      fragColor = vec4(${normc2str(colorPallet[13])}, 1.0);
     } else {
       fragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
