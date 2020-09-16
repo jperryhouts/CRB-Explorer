@@ -59,8 +59,11 @@
           Your browser does not support HTML5.
         </canvas>
         <div id='legend'>
+          <div id='legend-title' style='cursor:text;font-family:monospace;font-size:x-large;'>- Legend</div>
           <div id='swatches' style='display:block;'></div>
-          <div>
+          <hr/>
+          <div id='instructions-title' style='cursor:pointer;font-family:monospace;font-size:x-large;'>+ Instructions</div>
+          <div id='instructions' style='display:none;'>
 <pre>On Map
  Mouse clicks:
   * L: Drag A *or* B
@@ -83,6 +86,37 @@ On X-Section:
           </div>
         </div>
       </div>
+
+    <script>
+        const showHideInstructions = (show) => {
+            const f = document.getElementById('instructions-title');
+            const g = document.getElementById('instructions');
+            g.style.display = show ? 'block' : 'none';
+            f.textContent = show ? '- Instructions' : '+ Instructions';
+            f.style.cursor = show ? 'default' : 'pointer';
+        };
+        const showHideLegend = (show) => {
+            const f = document.getElementById('legend-title');
+            const g = document.getElementById('swatches');
+            g.style.display = show ? 'block' : 'none';
+            f.textContent = show ? '- Legend' : '+ Legend';
+            f.style.cursor = show ? 'default' : 'pointer';
+        };
+        document.getElementById('instructions-title').addEventListener('click', (e) => {
+            const isHidden = document.getElementById('instructions').style.display === 'none';
+            if (isHidden) {
+                showHideInstructions(true);
+                showHideLegend(false);
+            }
+        });
+        document.getElementById('legend-title').addEventListener('click', (e) => {
+            const isHidden = document.getElementById('swatches').style.display === 'none';
+            if (isHidden) {
+                showHideLegend(true);
+                showHideInstructions(false);
+            }
+        });
+    </script>
 
       <div id="xsection-div">
         <canvas id="xsection" width="900px" height="300px"></canvas>
