@@ -1,9 +1,11 @@
 "use strict";
 
-const unitNames = ['OLDER','IMNAHA','PICTURE GORGE','CRB','GRR1','GRN1','GRR2','GRN2',
+const unitNames = ['OLDER','IMNAHA','PICTURE GORGE',
+    'CRB','GRR1','GRN1','GRR2','GRN2',
     'WANAPUM','LWR. WANAPUM','UPR. WANAPUM',
-    'LWR. Saddle MTN','UPR. Saddle MTN',
-    'YOUNGER'];
+    'WEISER',
+    'SADDLE MTN', 'LWR. SADDLE MTN','UPR. SADDLE MTN',
+    'POWDER RIVER', 'SEDIMENT'];
 
 /* https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=8 */
 const colorPallet = [
@@ -11,22 +13,44 @@ const colorPallet = [
     [182,137,230], // Imnaha
     [226,198,241], // PG
 
-  [110,177,211], // CRB (undifferentiated)
-  [109.0,199.0,255.0], // GRR1
-  [183.0,231.0,255.0], // GRN1
-  [205.0,255.0,160.0], // GRR2
-  [136.0,245.0,129.0], // GRN2
-  //[255.0,164.0,163.0], // GRN2
+  // [110,177,211], // CRB (undifferentiated)
+  // [109.0,199.0,255.0], // GRR1
+  // [183.0,231.0,255.0], // GRN1
+  // [205.0,255.0,160.0], // GRR2
+  // [136.0,245.0,129.0], // GRN2
+  [1,70,54],[1,108,89],[2,129,138],[54,144,192],[103,169,207],
 
-  [255.0,72.0,74.0], // Wanapum lower
-  [255.0,99.0,100.0], // Wanapum
+  // // Picture Gorge
+  // [65,171,93],
+
+  [255.0,72.0,74.0], // Wanapum
+  [255.0,99.0,100.0], // Wanapum lower
   [255.0,140.0,120.0], // Wanapum upper
 
-  [255.0,168.0,47.0], // Saddle mtn lower
-  [255.0,199.0,83.0], // Saddle mtn upper
+  // Weiser
+  //[221,52,151],
+  [254,224,210],
 
-  //[255.0,219.0,130.0] // younger
-    [255,237,130] // YOUNGER
+  [255.0,168.0,47.0], // Saddle mtn
+  [255.0,199.0,83.0], // Saddle mtn lower
+  [255,255,180], // Saddle mtn upper
+
+  // // Ellensburg Latah interbeds
+  // [102,37,6],
+
+  // Powder River
+  [150,150,150],
+
+  // Sediments + Younger
+  [255,255,255]
+
+  // [255.0,219.0,130.0] // younger
+  //  [255,237,130] // YOUNGER
+  // [217,240,163], // Powder river
+  // [173,221,142], // picture gorge
+  // [120,198,121], // Weiser
+  // [247,252,185], // Interbeds
+  // [255,237,130] // Sediments
 ];
 
 const c2str = (c) => `${c[0]},${c[1]},${c[2]}`;
@@ -124,7 +148,13 @@ void main()
     }else if (unitIndex == 12.0) {
       fragColor = vec4(${normc2str(colorPallet[12])}, 1.0);
     }else if (unitIndex == 13.0) {
-      fragColor = vec4(${normc2str(colorPallet[13])}, 0.0);
+      fragColor = vec4(${normc2str(colorPallet[13])}, 1.0);
+    }else if (unitIndex == 14.0) {
+      fragColor = vec4(${normc2str(colorPallet[14])}, 1.0);
+    }else if (unitIndex == 15.0) {
+      fragColor = vec4(${normc2str(colorPallet[15])}, 1.0);
+    }else if (unitIndex == 16.0) {
+      fragColor = vec4(${normc2str(colorPallet[16])}, 1.0);
     } else {
       fragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
@@ -419,7 +449,7 @@ const updateMapOverlay = function() {
 
 const setupLegend = function() {
   const swatches = document.getElementById('swatches');
-  for (let i=colorPallet.length-2; i>-1; i--) {
+  for (let i=colorPallet.length-1; i>-1; i--) {
     const e = document.createElement('div');
     const f = document.createElement('div');
     f.style.width = "15px";
@@ -440,7 +470,7 @@ const setupBackgroundMap = function() {
   const W=mapCanvasDiv.clientWidth, H=mapCanvasDiv.clientHeight;
 
   const layers = [];
-  for (let i=0; i<colorPallet.length-1; i++) {
+  for (let i=0; i<colorPallet.length; i++) {
     const layer = document.createElement('canvas');
     layer.setAttribute('width',`${W}px`);
     layer.setAttribute('height',`${H}px`);
@@ -450,7 +480,7 @@ const setupBackgroundMap = function() {
     layers.push(ctx);
   }
 
-  const placeDot = async function(x,y,isUpperUnit,unitIndex) {
+  const placeDot = function(x,y,isUpperUnit,unitIndex) {
     const ctx = layers[unitIndex];
     const color = colorPallet[unitIndex];
     const dotRadius = (isUpperUnit) ? 2.0 : 1.0;
@@ -468,7 +498,7 @@ const setupBackgroundMap = function() {
     const y = dv.getFloat32(data.elementSize*i+4,true);
     const isUpperUnit = (dv.getFloat32(data.elementSize*i+12,true) > 0.5);
     const unitIndex = Math.round(dv.getFloat32(data.elementSize*i+16,true));
-    if (unitIndex < colorPallet.length-2) {
+    if (unitIndex < colorPallet.length) {
       placeDot(x,y,isUpperUnit,unitIndex);
     }
   }
