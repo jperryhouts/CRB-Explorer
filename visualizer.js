@@ -456,6 +456,7 @@ const setupLegend = function() {
     f.style.height = "15px";
     f.style.backgroundColor = `rgb(${c2str(colorPallet[i])})`;
     f.style.display = 'inline-block';
+    f.style.outline = '1px solid black';
     const g = document.createElement('span');
     g.textContent = unitNames[i];
     g.style.paddingLeft = '1em';
