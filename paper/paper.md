@@ -16,7 +16,7 @@ affiliations:
     index: 1
   - name: Department of Earth and Space Sciences, University of Washington, Seattle
     index: 2
-date: 27 October 2020
+date: 28 October 2020
 bibliography: paper.bib
 ---
 
@@ -34,22 +34,23 @@ It uses standards-compliant Javascript with no third-party libraries, and its co
 
 # Statement of Need
 
-Interactive digital tools are increasingly common in STEM education, but the availability of such tools is frequently limited to on-campus workstations with specialized tools preinstalled and maintained.
-In many cases these tools are available for students to download and install on their own computers, but some students may be limited by compatibility or performance limitations of their particular devices.
-This format can create an accessibility barrier for students who rely on campus resources in order to access required tools and content.
-It also poses a logistical and financial burden on universities to maintain and support sufficient shared workstations.
-Additionally, with the recent expansion of remote learning, software accessibility has become a more urgent issue as access to on-campus facilities may not be possible at all for some students.
+Interactive digital tools are increasingly common in STEM education, but the availability of such tools is frequently limited to on-campus workstations with specialized software preinstalled and centrally maintained.
+In many cases these tools are available for students to download and install on their own computers, but some students may be restricted by compatibility or performance limitations of their personal devices.
+This can create an accessibility barrier, by presenting unequal obstacles for students who rely on campus resources in order to access necessary materials.
+It also imposes a logistical and financial burden on universities to maintain and support sufficient shared workstations.
+Additionally, with the recent transition to remote learning, software accessibility has become a more urgent issue, as access to on-campus facilities may not be possible for some students.
 
-Web browsers provide a standardized cross-platform environment that is optimized for rapid development of rich interactive user interfaces, and have recently been utilized for application-specific educational tools in life sciences `[@Fisher2019; @Scotti2020]`.
-Recent adoption of WebGL standards `[@webGL]` in all modern browsers pushes these capabilities even further, enabling instant access to complex and potentially computationally-intensive applications on nearly any modern internet-connected device.
+Web browsers provide a standardized cross-platform environment that is optimized for rapid development of rich interactive user interfaces.
+Several examples of educational tools for life sciences have been released and distributed through custom web interfaces `[@Fisher2019; @Scotti2020]`.
+Recent adoption of WebGL standards `[@webGL]` in all modern browsers pushes these capabilities even further, enabling access to complex and potentially computationally-intensive software from any modern internet-connected device.
 By providing access to low-level system resources, WebGL opens the door to development of interactive 3D visualizations and parallel computations with relatively modest hardware requirements, and nearly universal device compatibility.
 
-`CRB Explorer` benefits from its "stateless" nature, executing completely within the user's browser with no server or database backend, making deployment simple and free of charge via static hosting services like GitHub Pages.
-However, the same principles of accessibility apply to more complex software, and server-side web-based tools like JupyterHub `[@JupyterHub]` have potential for reaching students with limited access to computational resources.
-By lowering the barrier to entry, web applications have the potential to expand access to specialized tools, allowing students to fully participate in their education.
+`CRB Explorer` benefits from its "stateless" nature, executing completely within the user's browser with no server or database back-end, making deployment simple and free of charge via static hosting services like [GitHub Pages](https://pages.github.com/).
+However, the same principles of accessibility apply to more complex software, and server-backed tools like JupyterHub `[@JupyterHub]` have potential for reaching students with limited access to computational resources.
+By lowering the barriers to entry, web applications have the potential to expand access to specialized tools, allowing students to fully participate in their education.
 
-# Acknowledgements
-The dataset bundled with `CRB Explorer` was generated in collaboration with Gene Humphreys, Daniel O'Hara, Ana Mercedes Col&oacute;n, and Nate Klema. It consists of digitized geologic contacts from publications of the United States Geological Survey and the Idaho Geological Survey. Specific map citations are included in the `CRB Explorer` online interface.
+# Acknowledgments
+The data set bundled with `CRB Explorer` was generated in collaboration with Gene Humphreys, Daniel O'Hara, Ana Mercedes Col&oacute;n, and Nate Klema. It consists of digitized geologic contacts from publications of the United States Geological Survey and the Idaho Geological Survey. Specific map citations are included in the `CRB Explorer` online interface.
 
 The bundled base map image was generated by [OpenStreetMap.org](https://www.openstreetmap.org/export#map=7/46.054/-120.004&layers=C), and is made available under the [Open Data Commons Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/) by the [OpenStreetMap Foundation (OSMF)](https://osmfoundation.org/).
 
