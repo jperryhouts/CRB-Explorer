@@ -30,8 +30,6 @@ Modern web technologies enable rapid development of interactive software, facili
 [CRB Explorer](https://jperryhouts.github.io/CRB-Explorer/) is a purpose-built tool for visualizing a particular set of digitized geologic maps in both 2D and 3D.
 It uses standards-compliant Javascript with no third-party libraries, and its code base demonstrates patterns and methods for developing complex application-specific educational tools.
 
-![CRB Explorer is a tool for visualizing geologic contacts within the Columbia River Flood Basalts](screenshot.png)
-
 # Statement of Need
 
 Interactive digital tools are increasingly common in STEM education, but the availability of such tools is frequently limited to on-campus workstations with specialized software preinstalled and centrally maintained.
@@ -48,6 +46,8 @@ By providing access to low-level system resources, WebGL opens the door to devel
 `CRB Explorer` benefits from its "stateless" nature, executing completely within the user's browser with no server or database back-end, making deployment simple and free of charge via static hosting services like [GitHub Pages](https://pages.github.com/).
 However, the same principles of accessibility apply to more complex software, and server-backed tools like JupyterHub `[@JupyterHub]` have potential for reaching students with limited access to computational resources.
 By lowering the barriers to entry, web applications have the potential to expand access to specialized tools, allowing students to fully participate in their education.
+
+![CRB Explorer is an interactive tool for visualizing geologic contacts within the Columbia River Flood Basalts](screenshot.png)
 
 # Acknowledgments
 The data set bundled with `CRB Explorer` was generated in collaboration with Gene Humphreys, Daniel O'Hara, Ana Mercedes Col&oacute;n, and Nate Klema. It consists of digitized geologic contacts from publications of the United States Geological Survey and the Idaho Geological Survey. Specific map citations are included in the `CRB Explorer` online interface.
