@@ -4,4 +4,4 @@ An interactive webtool for visualizing geologic contacts between geologic units 
 
 This repository can be viewed as a web page via GitHub Pages: [https://jperryhouts.github.io/CRB-Explorer/](https://jperryhouts.github.io/CRB-Explorer/)
 
-![CRB Explorer tool screenshot](screenshot.png)
+![CRB Explorer tool screenshot](paper/screenshot.png)
