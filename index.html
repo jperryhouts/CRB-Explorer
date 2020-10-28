@@ -65,37 +65,68 @@
           <div id='instructions' style='display:none;padding-top:0.5em;'>
 <div style='font-weight:bold;font-family:sans-serif;width=100%;text-align:left;font-size:small;border:0.5px solid gray;padding:1em;margin:0px;'>
 Map element
-<pre> Mouse clicks:
-  * L: Drag A *or* B
-  * R: Drag both A *and* B
+<pre> Mouse:
+    L: Drag A *or* B
+    R: Drag both A *and* B
 
- Arrow keys:
-  * U/D: Translate fwd/back
-  * L/R: Rotate view L/R
-  * Shift+U/D: Tilt up/down
-  * Shift+L/R: Translate L/R
- z/Shift-Z: Adjust x-section
-            thickness</pre></div>
+ Keyboard:
+    ↑/↓: Translate fwd/back
+    ←/→: Rotate view L/R
+    Shift + ←/→: Translate L/R
+    z/Shift+Z: Adjust slice
+             thickness</pre></div>
 
 <div style='font-weight:bold;font-family:sans-serif;width=100%;text-align:left;font-size:small;border:0.5px solid gray;padding:1em;margin:0.5em 0px 0px 0px;'>
 Cross-section Element:
-<pre> Mouse clicks:
-  * Left/Right: Move ruler
-    (same as A/B points above)
-  * Middle: Pan view up/down
-  * Scroll: Change scaling
+<pre> Mouse:
+    Left/Right: Move ruler
+      (same as A/B points above)
+    Middle: Pan view up/down
+    Scroll: Change scaling
 
- Space: Reset pitch & scale</pre></div>
+ Keyboard:
+    Shift + ↑/↓: Tilt up/down
+    Space: Reset pitch & scale</pre></div>
           </div>
           <div id='credits-title' style='cursor:pointer;font-family:monospace;font-size:x-large;font-weight:bold;margin-top:0.5em;'>+ Credits</div>
           <div id='credits' style='display:none;font-size:x-small;'>
             <div style='margin-top:1em;'>
-              Digitization by Philip Schoettle-Greene, Gene Humphreys,
-              Jonathan Perry-Houts, Daniel O'Hara, Ana Mercedes Col&oacute;n, and
-              Nate Klema.
+              Map digitization by Philip Schoettle-Greene, Gene Humphreys,
+              Jonathan Perry-Houts, Daniel O'Hara, Ana Mercedes Col&oacute;n,
+              and Nate Klema.
             </div>
 
             <div style='margin-top:1em;font-weight:bold;display:block;'>Sources</div>
+
+            <div style="margin-top:1em;display:block;">
+              USGS:
+                <div style="padding-left: 1em;">
+                  <a href="https://doi.org/10.3133/i1139" style="text-decoration:underline;white-space:no-wrap;"
+                  title='D.A. Swanson, T.L. Wright, V.E. Camp, J.N. Gardner, R.T. Helz, S.M. Price, S.P. Riedel, M.E. Ross. "Reconnaissance Geologic Map of the Columnbia River Basalt Group, Pullman and Walla Walla Quadrangles, Southeast Washington and Adjacent Idaho". 1980. USGS.'>
+                    Swanson et. al. 1980</a>;
+                  <a href="https://doi.org/10.3133/ofr81797" style="text-decoration:underline;white-space:no-wrap;"
+                  title='D.A. Swanson, J.L. Anderson, V.E. Camp, P.R. Hooper, W.H. Taubeneck, T.L. Wright. "Reconnaissance map of the Columbia River Basalt Group, Northern Oregon and Western Idaho: [Baker, The Dalles, Elk City, Grangeville, and Pendleton quadrangles]". 1981. USGS.'>
+                    Swanson et. al., 1981</a>
+                </div>
+
+              Idaho Geologic Survey:
+                <div style='padding-left: 1em;cursor:default;'>
+                  <a href="https://www.idahogeology.org/product/gm-18" style='text-decoration:underline;'
+                    title='K.L. Othberg and L.R. Stanford. "Geologic Map of the Boise Valley and Adjoining Area, Western Snake River Plain, Idaho". 1992. Idaho Geological Survey.'>GM-18</a>;
+                  <a href="https://www.idahogeology.org/product/gm-40" style='text-decoration:underline;'
+                    title='J.D. Kauffman, G.F. Davidson, R.S. Lewis, and R.F. Burmester. "Geologic Map of the Orofino West Quadrangle, Clearwater, Lewis, and Nez Perce Counties, Idaho". 2005. Idaho Geological Survey.'>GM-40</a>;
+                  <a href="https://www.idahogeology.org/product/gm-29" style='text-decoration:underline;'
+                    title='T.H. Kiilsgaard, L.R. Stanford, and R.S. Lewis. "Geologic Map of the Idaho City 30 x 60 Minute Quadrangle, Idaho". 2001. Idaho Geological Survey.'>GM-29</a>;
+                  <a href="https://www.idahogeology.org/product/dwm-92" style='text-decoration:underline;'
+                    title='R.S. Lewis, R.F. Burmester, M.D. McFaddan, J.D. Kauffman, P. Ted Doughty, W.L. Oakley, and T.P. Frost. "Geologic Map of the Headquarters 30 x 60 Minute Quadrangle, Idaho". 2007. Idaho Geological Survey.'>DWM-92</a>;
+                  <a href="https://www.idahogeology.org/product/dwm-80" style='text-decoration:underline;'
+                    title='B. Bonnichsen and M.M. Godchaux. "Geologic Map of the Murphy 30 x 60 Quadrangle, Ada, Canyon, Elmore, and Owyhee Counties, Idaho". 2006. Idaho Geological Survey.'>DWM-80</a>;
+                  <a href="https://www.idahogeology.org/product/dwm-94" style='text-decoration:underline;'
+                    title='R.S. Lewis, R.F. Burmester, R.M. Breckenridge, M.D. McFaddan, and W.M. Phillips. "Preliminary Geologic Map of the Sandpoint 30 x 60 Minute Quadrangle, Idaho and Montana, and the Idaho Part of the Chewelah 30 x 60 Minute Quadrangle". 2008. Idaho Geological Survey.'>DWM-94</a>;
+                  <a href="https://www.idahogeology.org/product/dwm-181" style='text-decoration:underline;'
+                    title='K.L. Schmidt, D.E. Stewart, R.S. Lewis, and W.M. Phillips. "Geologic Map of the Smiths Ferry Quadrangle, Valley County, Idaho". 2017. Idaho Geological Survey.'>DWM-181</a>.
+                </div>
+            </div>
 
             <div style="margin-top:0.5em;display:block;">
               Base map image generated by
@@ -104,32 +135,15 @@ Cross-section Element:
             </div>
 
             <div style="margin-top:1em;display:block;">
-              USGS:
-                <div style="padding-left: 1em;text-decoration:underline;cursor:default;"
-                    title='D.A. Swanson, T.L. Wright, V.E. Camp, J.N. Gardner, R.T. Helz, S.M. Price, S.P. Riedel, M.E. Ross. "Reconnaissance Geologic Map of the Columnbia River Basalt Group, Pullman and Walla Walla Quadrangles, Southeast Washington and Adjacent Idaho". 1980. USGS.'>
-                  Swanson et. al. 1980;
-                </div>
-                <div style="padding-left: 1em;text-decoration:underline;cursor:default;"
-                  title='D.A. Swanson, J.L. Anderson, V.E. Camp, P.R. Hooper, W.H. Taubeneck, T.L. Wright. "Reconnaissance map of the Columbia River Basalt Group, Northern Oregon and Western Idaho: [Baker, The Dalles, Elk City, Grangeville, and Pendleton quadrangles]". 1981. USGS.'>
-                  Swanson et. al., 1981.
-                </div>
-
-              Idaho Geologic Survey:
-                <div style='padding-left: 1em;cursor:default;'>
-                  <span style='text-decoration:underline;'>GM-18</span>;
-                  <span style='text-decoration:underline;'>GM-40</span>;
-                  <span style='text-decoration:underline;'>DWM-92</span>;
-                  <span style='text-decoration:underline;'>GM-29</span>;
-                  <span style='text-decoration:underline;'>DWM-80</span>;
-                  <span style='text-decoration:underline;'>DWM-94</span>;
-                  <span style='text-decoration:underline;'>DWM-181</span>.
-                </div>
+              Source code and documentation is available through this project's
+              <a href="https://github.com/jperryhouts/CRB-Explorer">GitHub</a>
+              repository.
             </div>
 
             <div style="margin-top:1em;display:block;">
-              This project's source code is available through its
-              <a href="https://github.com/jperryhouts/CRB-Explorer">GitHub</a>
-              repository.
+              This work was supported by National Science Foundation grant
+              <a href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1727451">
+                EAR-1727451.</a>
             </div>
 
             <div style="margin-top:1em;display:block;">
