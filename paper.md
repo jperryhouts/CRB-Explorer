@@ -39,12 +39,12 @@ It also imposes a logistical and financial burden on universities to maintain an
 Additionally, with the recent transition to remote learning, software accessibility has become a more urgent issue, as access to on-campus facilities may not be possible for some students.
 
 Web browsers provide a standardized cross-platform environment that is optimized for rapid development of rich interactive user interfaces.
-Several examples of educational tools for life sciences have been released and distributed through custom web interfaces `[@Fisher2019; @Scotti2020]`.
-Recent adoption of WebGL standards `[@webGL]` in all modern browsers pushes these capabilities even further, enabling access to complex and potentially computationally-intensive software from any modern internet-connected device.
+Several examples of educational tools for life sciences have been released and distributed through custom web interfaces [@Fisher2019; @Scotti2020].
+Recent adoption of WebGL standards [@webGL] in all modern browsers pushes these capabilities even further, enabling access to complex and potentially computationally-intensive software from any modern internet-connected device.
 By providing access to low-level system resources, WebGL opens the door to development of interactive 3D visualizations and parallel computations with relatively modest hardware requirements, and nearly universal device compatibility.
 
 `CRB Explorer` benefits from its "stateless" nature, executing completely within the user's browser with no server or database back-end, making deployment simple and free of charge via static hosting services like [GitHub Pages](https://pages.github.com/).
-However, the same principles of accessibility apply to more complex software, and server-backed tools like JupyterHub `[@JupyterHub]` have potential for reaching students with limited access to computational resources.
+However, the same principles of accessibility apply to more complex software, and server-backed tools like JupyterHub [@JupyterHub] have potential for reaching students with limited access to computational resources.
 By lowering the barriers to entry, web applications have the potential to expand access to specialized tools, allowing students to fully participate in their education.
 
 ![CRB Explorer is an interactive tool for visualizing geologic contacts within the Columbia River Flood Basalts](screenshot.png)
