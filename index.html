@@ -24,17 +24,36 @@
       }
       #xsection-div {
         display:block;
-        position:relative;
-        background-color: #ddd/*rgba(191,216,204,255)*/;
-        border:1px solid black;
+        position:absolute;
+        background-color: #ddd;
         width:900px;
-        height:300px;
-        margin:2em auto;
+        height:calc(100% - 1.5em);
+        top:0px;
+        left:0px;
       }
       #xsection-div>canvas {
         position:absolute;
         top:0px;
         left:0px;
+        width:900px;
+        height:100%;
+      }
+      #bottomwindowcontent {
+        display:block;
+        position:relative;
+        border:1px solid black;
+        width:900px;
+        height:325px;
+        margin:2em auto;
+        resize:vertical;
+        overflow:hidden;
+      }
+      #infolabels {
+        position:absolute;
+        top:calc(100% - 1.5em);
+        left:0px;
+        height:1.5em;
+        vertical-align:text-bottom;
       }
       #legend {
         border:1px solid black;
@@ -67,7 +86,8 @@
 Map element
 <pre> Mouse:
     L: Drag A *or* B
-    R: Drag both A *and* B
+    R|Middle: Drag both A *and* B
+    Scroll: Adjust slice thickness
 
  Keyboard:
     ↑/↓: Translate fwd/back
@@ -79,10 +99,11 @@ Map element
 <div style='font-weight:bold;font-family:sans-serif;width=100%;text-align:left;font-size:small;border:0.5px solid gray;padding:1em;margin:0.5em 0px 0px 0px;'>
 Cross-section Element:
 <pre> Mouse:
-    Left/Right: Move ruler
-      (same as A/B points above)
-    Middle: Pan view up/down
-    Scroll: Change scaling
+    Left: Rotate view
+          or
+          Move ruler
+    Middle: Pan view
+    Scroll: Change vertical scale
 
  Keyboard:
     Shift + ↑/↓: Tilt up/down
@@ -212,10 +233,12 @@ Cross-section Element:
         });
     </script>
 
-      <div id="xsection-div">
-        <canvas id="xsection" width="900px" height="300px"></canvas>
-        <canvas id="xsection-overlay" width="900px" height="300px"></canvas>
-        <div style='display:block;position:absolute;top:300px;'>
+      <div id="bottomwindowcontent">
+        <div id="xsection-div">
+          <canvas id="xsection" width="900px"></canvas>
+          <canvas id="xsection-overlay" width="900px"></canvas>
+        </div>
+        <div style='display:block;' id="infolabels">
           A: <span id='Alabel'></span> |
           B: <span id='Blabel'></span> |
           Length: <span id="ABLengthLabel"></span> km |

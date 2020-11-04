@@ -270,6 +270,11 @@ const tools = {
     state.pointA[0] += move[0]; state.pointA[1] += move[1];
     state.pointB[0] += move[0]; state.pointB[1] += move[1];
   },
+  doAbsoluteTranslate: function(posA, posB, dx) {
+    const move = tools.unproject(posA, posB, dx);
+    state.pointA[0] = posA[0] + move[0]; state.pointA[1] = posA[1] + move[1];
+    state.pointB[0] = posB[0] + move[0]; state.pointB[1] = posB[1] + move[1];
+  },
   doRotate: function(dTheta) {
     const axis = [(state.pointA[0]+state.pointB[0])/2,
                   (state.pointA[1]+state.pointB[1])/2];
@@ -305,7 +310,6 @@ const tools = {
 };
 
 const startDrag = (e) => {
-  e.preventDefault();
   const rect1 = document.getElementById("map-overlay").getBoundingClientRect();
   const pos1 = [(e.clientX - rect1.left)/rect1.width,
             1-(e.clientY - rect1.top)/rect1.height];
@@ -314,16 +318,22 @@ const startDrag = (e) => {
               1-(e.clientY - rect2.top)/rect2.height];
   const AX = tools.distance(pos1,state.pointA);
   const BX = tools.distance(pos1,state.pointB);
+
   if (e.buttons === 1 && (AX < 0.05 || BX < 0.05)) {
+    e.preventDefault();
     state.dragging = (AX < BX) ? "A" : "B";
   } else if (Math.abs(tools.project(state.pointA, state.pointB, pos1)[1]) < 0.05) {
+    e.preventDefault();
     state.dragging = "AB";
   } else if (pos2[0]>0 && pos2[0]<1 && pos2[1]>0 && pos2[1]<1) {
+    e.preventDefault();
     if (e.buttons === 1) {
       const R1 = tools.distance(pos2,state.ruler[0]);
       const R2 = tools.distance(pos2,state.ruler[1]);
       if (R1 < 0.05 || R2 < 0.05) {
         state.dragging = (R1 < R2) ? 'ruler_1' : 'ruler_2';
+      } else {
+        state.dragging = "tiltpan";
       }
     } else if (e.buttons === 2) {
       const R = Math.abs(tools.project(state.ruler[0], state.ruler[1], pos2)[1]);
@@ -361,7 +371,12 @@ const loadData = async function() {
 const updateXsectionOverlay = function() {
   const overlayCanvas = document.getElementById("xsection-overlay");
   const ctx = overlayCanvas.getContext("2d");
-  const W=overlayCanvas.width, H=overlayCanvas.height;
+  const W=overlayCanvas.clientWidth, H=overlayCanvas.clientHeight;
+  if (W !== overlayCanvas.width ||
+      H !== overlayCanvas.height) {
+      overlayCanvas.width = W;
+      overlayCanvas.height = H;
+    }
 
   // Draw ruler line
   ctx.clearRect(0, 0, W, H); // clear canvas
@@ -513,6 +528,8 @@ const InitApp = async function() {
   updateXsectionOverlay();
 
   const glCanvas = document.getElementById("xsection");
+  glCanvas.width = glCanvas.clientWidth;
+  glCanvas.height = glCanvas.clientHeight;
   const gl = glCanvas.getContext("webgl") || glCanvas.getContext("experimental-webgl");
 
   if (!gl) {
@@ -635,11 +652,42 @@ const InitApp = async function() {
     gl.drawArrays(gl.POINTS, 0/*offset*/, data.vertices.byteLength/data.elementSize/*vertex count*/);
   };
 
+  let lastResize = (new Date()).getTime();
+  const resizeObserver = new MutationObserver((mutationsList, observer) => {
+    const now = (new Date()).getTime();
+    if (now - lastResize > 50) {
+      setTimeout(() => {
+        if (glCanvas.width !== glCanvas.clientWidth
+          || glCanvas.height !== glCanvas.clientHeight) {
+          glCanvas.width = glCanvas.clientWidth;
+          glCanvas.height = glCanvas.clientHeight;
+          gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        }
+        updateXsectionOverlay();
+        loop();
+      }, 100);
+    }
+  });
+  resizeObserver.observe(
+      document.getElementById("bottomwindowcontent"),
+      { attributes: true }
+    );
+  // window.addEventListener('unload', resizeObserver.disconnect);
+
   document.body.addEventListener('wheel', (e) => {
-    const rect = document.getElementById("xsection").getBoundingClientRect();
-    const pos = [(e.clientX - rect.left)/rect.width,
-               1-(e.clientY - rect.top)/rect.height];
-    if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
+    const rect1 = document.getElementById("map-overlay").getBoundingClientRect();
+    const pos1 = [(e.clientX - rect1.left)/rect1.width,
+                  1-(e.clientY - rect1.top)/rect1.height];
+    const rect2 = document.getElementById("xsection").getBoundingClientRect();
+    const pos2 = [(e.clientX - rect2.left)/rect2.width,
+                  1-(e.clientY - rect2.top)/rect2.height];
+
+    if (pos1[0] > 0.0 && pos1[0] < 1.0 && pos1[1] > 0.0 && pos1[1] < 1.0) {
+      e.preventDefault();
+      const dZ = -e.deltaY/Math.abs(e.deltaY) * 0.1 * Math.log(state.sectionHalfThickness[0]+1.0-0.00009);
+      state.sectionHalfThickness[0] = Math.max(state.sectionHalfThickness[0]+dZ,0.0001);
+      window.requestAnimationFrame(()=>{ updateMapOverlay(); loop(); });
+    } else if (pos2[0] > 0.0 && pos2[0] < 1.0 && pos2[1] > 0.0 && pos2[1] < 1.0) {
       e.preventDefault();
       state.zoom[0] -= 0.15*e.deltaY/Math.abs(e.deltaY);
       state.zoom[0] = Math.min(Math.max(0.01, state.zoom[0]),10.0);
@@ -650,7 +698,7 @@ const InitApp = async function() {
   document.body.addEventListener('mouseup', (e) => stopDrag(e));
   document.body.addEventListener('mousemove', (e) => {
     if (e.buttons > 0) {
-      if (['scroll','ruler_1','ruler_2','ruler_12'].includes(state.dragging)) {
+      if (['scroll','ruler_1','ruler_2','ruler_12',"tilt"].includes(state.dragging)) {
         const rect = document.getElementById("xsection").getBoundingClientRect();
         const pos = [(e.clientX - rect.left)/rect.width,
                    1-(e.clientY - rect.top)/rect.height];
@@ -661,7 +709,13 @@ const InitApp = async function() {
             if (state.dragging === 'scroll') {
               //state.scroll[0] = state.dragstartscroll[0] + dx[0];
               state.scroll[1] = state.dragstartscroll[1] + dx[1];
-              window.requestAnimationFrame(loop);
+              const canvasShiftDistance = -(pos[0]-state.dragstartptr[1][0]);
+              const xSectionWidth = tools.mapDistanceDegrees(state.pointA, state.pointB);
+              const mapShiftDistance = canvasShiftDistance*xSectionWidth;
+              tools.doAbsoluteTranslate(state.dragstartpoints[0],
+                                        state.dragstartpoints[1],
+                                        [mapShiftDistance, 0]);
+              window.requestAnimationFrame(()=>{ updateMapOverlay(); loop(); });
             }
           } else if (e.buttons === 2) {
             if (state.dragging === 'ruler_12') {
@@ -678,7 +732,31 @@ const InitApp = async function() {
             window.requestAnimationFrame(updateXsectionOverlay);
           }
         }
-      } else if (state.dragging === 'A' || state.dragging === 'B' || state.dragging === 'AB') {
+      } else if (state.dragging === "tiltpan") {
+        const rect = document.getElementById("xsection").getBoundingClientRect();
+        const pos = [(e.clientX - rect.left)/rect.width,
+                   1-(e.clientY - rect.top)/rect.height];
+        if (pos[0] > 0.0 && pos[0] < 1.0 && pos[1] > 0.0 && pos[1] < 1.0) {
+          const dx = pos[0]-state.dragstartptr[0][0];
+          const dy = pos[1]-state.dragstartptr[1][1];
+
+          if (e.buttons === 1) {
+            // Change tilt level
+            state.tilt[0] -= dy*Math.PI/2;
+            state.tilt[0] = Math.min(state.tilt[0], Math.PI/2);
+            state.tilt[0] = Math.max(state.tilt[0], 0.0);
+            const RulerInfoSpan = document.getElementById('ruler-info');
+            RulerInfoSpan.style.textDecoration = (state.tilt[0] > 0.0) ? 'line-through' : 'none';
+
+            // Rotate view
+            const dtheta = Math.max(-3.0, Math.min(-300*dx, 3.0));
+            tools.doRotate(dtheta);
+          }
+          state.dragstartptr[0][0] += dx;
+          state.dragstartptr[1][1] += dy;
+          window.requestAnimationFrame(()=>{ updateMapOverlay(); loop(); });
+        }
+      } else if (["A","B","AB"].includes(state.dragging)) {
         const  rect = document.getElementById("map-overlay").getBoundingClientRect();
         const  pos = [(e.clientX - rect.left)/rect.width,
                     1-(e.clientY - rect.top)/rect.height];
@@ -692,7 +770,7 @@ const InitApp = async function() {
               state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
               state.pointB[1] = state.dragstartpoints[1][1] + dx[1];
             }
-          } else if (e.buttons === 2 && state.dragging === 'AB') { // right click drag
+          } else if ((e.buttons === 2 || e.buttons === 4) && state.dragging === 'AB') { // right click drag
             state.pointA[0] = state.dragstartpoints[0][0] + dx[0];
             state.pointA[1] = state.dragstartpoints[0][1] + dx[1];
             state.pointB[0] = state.dragstartpoints[1][0] + dx[0];
@@ -748,14 +826,14 @@ const InitApp = async function() {
     e.preventDefault();
     handleKeyDown(e);
     const RulerInfoSpan = document.getElementById('ruler-info');
-    RulerInfoSpan.style.textDecoration = (state.tilt > 0.0) ? 'line-through' : 'none';
+    RulerInfoSpan.style.textDecoration = (state.tilt[0] > 0.0) ? 'line-through' : 'none';
     window.requestAnimationFrame(()=>{
       updateXsectionOverlay(); updateMapOverlay(); loop(); });
   });
 
   document.getElementById("map-div").oncontextmenu = (e) => startDrag(e);
+  //document.getElementById("xsection-div").oncontextmenu = (e) => startDrag(e);
   document.getElementById("xsection").oncontextmenu = (e) => startDrag(e);
-  document.getElementById("xsection-div").oncontextmenu = (e) => startDrag(e);
   document.getElementById("xsection-overlay").oncontextmenu = (e) => startDrag(e);
 
   window.requestAnimationFrame(loop);
