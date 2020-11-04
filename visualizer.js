@@ -101,7 +101,7 @@ void main()
 
     // Scale & shift lateral dimensions
     float AB = sqrt(B1.x*B1.x + B1.y*B1.y);
-    X = vec3(X.x/AB-0.5, X.y, X.z/AB*canvasAspect);
+    X = vec3(X.x/AB-0.5, X.y*max(zoom,0.01), X.z/AB*canvasAspect);
 
     // Do tilt (pitch) transform
     C = cos(-tilt); S = sin(-tilt);
@@ -112,9 +112,6 @@ void main()
     // Just to be safe, let's squish things down even more in depth.
     // This prevents clipping deep strata when they are tilted around x-axis
     X /= vec3(1.0, 1.0, 10.0);
-
-    // Zoom
-    X *= vec3(1.0, zoom, 1.0);
 
     // Vertical scroll
     X += vec3(scroll.x, scroll.y, 0.0);
@@ -306,6 +303,25 @@ const tools = {
     const lon = xy[0]*mapwidth + data.limits[0][0];
     const lat = xy[1]*mapheight + data.limits[0][1];
     return [lon,lat];
+  },
+  getRulerProperties(position, tilt, zoom) {
+    const info = {};
+    if (tilt === 0.0) {
+      info.decoration = "none";
+      info.title = "";
+    } else {
+      info.decoration = "line-through";
+      info.title = "Ruler element does not have a well defined meaning when the view angle is tilted.";
+    }
+    if (position !== null) {
+      const rulerX = position[0], rulerY = position[1];
+      if (zoom === 0) {
+        info.text = String.fromCharCode(8734); // Infinity
+      } else {
+        info.text = (Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2);
+      }
+    }
+    return info;
   }
 };
 
@@ -414,7 +430,11 @@ const updateXsectionOverlay = function() {
   const rulerX = Math.abs(state.ruler[1][0] - state.ruler[0][0])*(extent[0])*AB;
   const rulerY = Math.abs(state.ruler[1][1] - state.ruler[0][1])*(extent[2])/state.zoom;
   const RulerLabelSpan = document.getElementById('RulerLabel');
-  RulerLabelSpan.textContent = (Math.sqrt(rulerX*rulerX + rulerY*rulerY)/1e3).toFixed(2);
+  const RulerInfoSpan = document.getElementById('ruler-info');
+  const rulerInfo = tools.getRulerProperties([rulerX, rulerY], state.tilt[0], state.zoom[0]);
+  RulerLabelSpan.textContent = rulerInfo.text;
+  RulerInfoSpan.style.textDecoration = rulerInfo.decoration;
+  RulerInfoSpan.title = rulerInfo.title;
 };
 
 const updateMapOverlay = function() {
@@ -690,7 +710,7 @@ const InitApp = async function() {
     } else if (pos2[0] > 0.0 && pos2[0] < 1.0 && pos2[1] > 0.0 && pos2[1] < 1.0) {
       e.preventDefault();
       state.zoom[0] -= 0.15*e.deltaY/Math.abs(e.deltaY);
-      state.zoom[0] = Math.min(Math.max(0.01, state.zoom[0]),10.0);
+      state.zoom[0] = Math.min(Math.max(0.00, state.zoom[0]),10.0);
       window.requestAnimationFrame(loop);
     }
   });
@@ -746,7 +766,9 @@ const InitApp = async function() {
             state.tilt[0] = Math.min(state.tilt[0], Math.PI/2);
             state.tilt[0] = Math.max(state.tilt[0], 0.0);
             const RulerInfoSpan = document.getElementById('ruler-info');
-            RulerInfoSpan.style.textDecoration = (state.tilt[0] > 0.0) ? 'line-through' : 'none';
+            const rulerInfo = tools.getRulerProperties(null, state.tilt[0], state.zoom[0]);
+            RulerInfoSpan.style.textDecoration = rulerInfo.decoration;
+            RulerInfoSpan.title = rulerInfo.title;
 
             // Rotate view
             const dtheta = Math.max(-3.0, Math.min(-300*dx, 3.0));
@@ -826,7 +848,9 @@ const InitApp = async function() {
     e.preventDefault();
     handleKeyDown(e);
     const RulerInfoSpan = document.getElementById('ruler-info');
-    RulerInfoSpan.style.textDecoration = (state.tilt[0] > 0.0) ? 'line-through' : 'none';
+    const rulerInfo = tools.getRulerProperties(null, state.tilt[0], state.zoom[0]);
+    RulerInfoSpan.style.textDecoration = rulerInfo.decoration;
+    RulerInfoSpan.title = rulerInfo.title;
     window.requestAnimationFrame(()=>{
       updateXsectionOverlay(); updateMapOverlay(); loop(); });
   });
